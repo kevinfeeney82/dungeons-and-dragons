@@ -555,7 +555,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     <button class="add-hero-btn-alt" style="border-color:rgba(200,150,60,0.65);color:#8a6030;" onclick="openCampaignFromParty()">🗺 Campaign Settings</button>
     <div style="height:16px"></div>
 
-    <div class="modal-section" id="apikey-section">
+    <div class="modal-section" id="apikey-section" style="display:none;">
       <div class="modal-section-title">API Key</div>
       <div class="field-row single">
         <div class="field"><label>Google Gemini API Key — free at aistudio.google.com</label>
@@ -1159,6 +1159,7 @@ function savePartySettings() {
   if (keyInput && !keyInput.startsWith('AIza')) { err.textContent = 'Key should start with AIza.'; return; }
   if (keyInput) apiKey = keyInput;
   if (!WORKER_URL && !apiKey) { err.textContent = 'Please enter your Gemini API key.'; return; }
+  if (WORKER_URL) apiKey = '__worker__'; // Mark as using worker
   if (party.length === 0) { err.textContent = 'Add at least one hero before beginning.'; return; }
   closePartyManager();
   renderPartyStrip();
@@ -1409,6 +1410,7 @@ function quickAction(t) { document.getElementById('player-input').value=t; sendA
 async function sendAction() {
   if (!gameStarted||party.length===0) { openPartyManager(); return; }
   if (!WORKER_URL && !apiKey) { openPartyManager(); return; }
+  if (!WORKER_URL && apiKey === '__worker__') { openPartyManager(); return; }
   const input = document.getElementById('player-input');
   const text = input.value.trim();
   if (!text) return;

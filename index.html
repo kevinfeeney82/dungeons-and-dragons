@@ -1557,14 +1557,23 @@ function initNarration() {
   }
 
   // Show/hide ElevenLabs key field based on selection
+  // If Worker URL is set, key is handled server-side — hide the field
+  const workerHandlesEL = WORKER_URL && WORKER_URL !== '';
+  if (workerHandlesEL) {
+    document.getElementById('el-key-row').style.display = 'none';
+  }
+
   select.addEventListener('change', () => {
     const isEL = select.value !== '__browser__';
     elevenLabsVoiceId = isEL ? select.value : null;
-    document.getElementById('el-key-row').style.display = isEL ? 'flex' : 'none';
-    if (isEL && !elevenLabsKey) {
-      document.getElementById('narration-status').textContent = 'Enter ElevenLabs key →';
-    } else {
-      document.getElementById('narration-status').textContent = '';
+    // Only show key field if no Worker is handling it
+    if (!workerHandlesEL) {
+      document.getElementById('el-key-row').style.display = isEL ? 'flex' : 'none';
+      if (isEL && !elevenLabsKey) {
+        document.getElementById('narration-status').textContent = 'Enter ElevenLabs key →';
+      } else {
+        document.getElementById('narration-status').textContent = '';
+      }
     }
   });
 }
@@ -1635,7 +1644,7 @@ async function speakText(text, btnEl) {
   if (btnEl) { btnEl.textContent = '⏹'; btnEl.dataset.speaking = '1'; }
   document.getElementById('narration-stop').style.display = 'inline-block';
 
-  const useEL = elevenLabsVoiceId && elevenLabsKey;
+  const useEL = elevenLabsVoiceId && (elevenLabsKey || (WORKER_URL && WORKER_URL !== ''));
 
   if (useEL) {
     await speakElevenLabs(clean, btnEl);
@@ -1646,14 +1655,18 @@ async function speakText(text, btnEl) {
 
 async function speakElevenLabs(text, btnEl) {
   try {
-    const response = await fetch(
-      'https://api.elevenlabs.io/v1/text-to-speech/' + elevenLabsVoiceId + '/stream',
-      {
+    // Use Cloudflare Worker if available (hides API key), otherwise direct
+    const useWorker = WORKER_URL && WORKER_URL !== '';
+    const fetchUrl = useWorker
+      ? WORKER_URL + '?service=elevenlabs&voice=' + elevenLabsVoiceId
+      : 'https://api.elevenlabs.io/v1/text-to-speech/' + elevenLabsVoiceId + '/stream';
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (!useWorker && elevenLabsKey) headers['xi-api-key'] = elevenLabsKey;
+
+    const response = await fetch(fetchUrl, {
         method: 'POST',
-        headers: {
-          'xi-api-key': elevenLabsKey,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           text: text,
           model_id: 'eleven_turbo_v2_5',
@@ -1664,8 +1677,7 @@ async function speakElevenLabs(text, btnEl) {
             use_speaker_boost: true
           }
         })
-      }
-    );
+      });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));

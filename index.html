@@ -1444,29 +1444,42 @@ async function sendAction() {
   btn.disabled=false; input.focus();
 }
 
-function addMessage(type,header,body) {
-  const log=document.getElementById('story-log');
-  const msg=document.createElement('div');
-  msg.className='msg msg-'+type;
-  let html=header?'<div class="msg-header">'+header+'</div>':'';
+function addMessage(type, header, body) {
+  const log = document.getElementById('story-log');
+  const msg = document.createElement('div');
+  msg.className = 'msg msg-' + type;
+
+  if (header) {
+    const hEl = document.createElement('div');
+    hEl.className = 'msg-header';
+    hEl.textContent = header;
+    msg.appendChild(hEl);
+  }
+
+  const bodyEl = document.createElement('div');
+  bodyEl.className = 'msg-body';
+  bodyEl.innerHTML = body.replace(/\n/g, '<br>');
+
   if (type === 'dm') {
-    // Add speak button to DM messages
-    const escapedBody = body.replace(/'/g, "\\'").replace(/"/g, '\\"');
-    html += '<div class="msg-body">' + body.replace(/\n/g,'<br>') +
-      '<button class="msg-speak-btn" onclick="toggleSpeakBtn(this, '' + escapedBody + '')" title="Read aloud">🔊</button>' +
-      '</div>';
-    msg.innerHTML = html;
+    // Add speak button using DOM (no quote escaping issues)
+    const speakBtn = document.createElement('button');
+    speakBtn.title = 'Read aloud';
+    speakBtn.textContent = '🔊';
+    speakBtn.style.cssText = 'font-size:12px;cursor:pointer;background:none;border:none;padding:2px 5px;margin-left:6px;border-radius:2px;color:#a07848;opacity:0.7;vertical-align:middle;transition:all 0.2s;';
+    speakBtn.onmouseover = () => { speakBtn.style.opacity = '1'; speakBtn.style.background = 'rgba(212,168,67,0.1)'; };
+    speakBtn.onmouseout = () => { if (!speakBtn.dataset.speaking) { speakBtn.style.opacity = '0.7'; speakBtn.style.background = 'none'; } };
+    speakBtn.onclick = (e) => { e.stopPropagation(); toggleSpeakBtn(speakBtn, body); };
+    bodyEl.appendChild(speakBtn);
+    msg.appendChild(bodyEl);
     log.appendChild(msg);
     log.scrollTop = log.scrollHeight;
-    // Auto-narrate if enabled
     if (narrationEnabled) {
-      setTimeout(() => speakText(body, msg.querySelector('.msg-speak-btn')), 300);
+      setTimeout(() => speakText(body, speakBtn), 300);
     }
   } else {
-    html+='<div class="msg-body">'+body.replace(/\n/g,'<br>')+'</div>';
-    msg.innerHTML=html;
+    msg.appendChild(bodyEl);
     log.appendChild(msg);
-    log.scrollTop=log.scrollHeight;
+    log.scrollTop = log.scrollHeight;
   }
   return msg;
 }

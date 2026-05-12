@@ -7,286 +7,233 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; background: #0a0806; color: #e8d5a3; overflow-x: hidden; }
+.parchment-bg { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse at 20% 50%, rgba(139,69,19,0.07) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(101,67,33,0.06) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(80,40,10,0.08) 0%, transparent 50%), #0a0806; }
 
-  html, body {
-    height: 100%;
-    font-family: 'Crimson Text', Georgia, serif;
-    background: #0a0806;
-    color: #e8d5a3;
-    overflow-x: hidden;
-  }
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.88); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.hidden { display: none; }
+.modal { background: #100b05; border: 1px solid rgba(212,168,67,0.35); border-radius: 4px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 32px 36px; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); }
+.modal-title { font-family: 'Cinzel', serif; font-size: 20px; color: #d4a843; letter-spacing: 2px; margin-bottom: 4px; }
+.modal-sub { font-size: 14px; color: #6a5030; font-style: italic; margin-bottom: 28px; }
+.modal-section { margin-bottom: 24px; }
+.modal-section-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; color: #8a6030; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(140,100,40,0.2); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.field-row.single { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px; color: #6a5030; text-transform: uppercase; }
+.field input, .field select, .field textarea { background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 15px; padding: 8px 10px; border-radius: 2px; outline: none; transition: border-color 0.2s; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(212,168,67,0.55); }
+.field select option { background: #1a0f05; }
+.field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+.stat-creator-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.stat-creator-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-creator-box label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; color: #6a5030; text-transform: uppercase; }
+.stat-creator-box input { background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d090; font-family: 'Cinzel', serif; font-size: 20px; font-weight: 600; width: 100%; text-align: center; padding: 8px 4px; border-radius: 2px; outline: none; }
+.stat-creator-box input:focus { border-color: rgba(212,168,67,0.55); }
+.stat-modifier { font-size: 12px; color: #8a6030; min-height: 16px; text-align: center; }
+.portrait-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.portrait-opt { width: 44px; height: 44px; border-radius: 50%; background: rgba(30,20,10,0.8); border: 2px solid rgba(120,90,40,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: all 0.15s; user-select: none; }
+.portrait-opt:hover { border-color: rgba(212,168,67,0.5); background: rgba(50,35,15,0.8); }
+.portrait-opt.selected { border-color: #d4a843; background: rgba(212,168,67,0.15); }
+.begin-btn { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 2px; background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.5); color: #d4a843; padding: 14px 32px; border-radius: 3px; cursor: pointer; transition: all 0.2s; width: 100%; margin-top: 8px; }
+.begin-btn:hover { background: rgba(212,168,67,0.2); border-color: #d4a843; }
+.begin-btn:active { transform: scale(0.98); }
+.error-msg { font-size: 13px; color: #c04030; font-style: italic; margin-top: 8px; min-height: 18px; text-align: center; }
 
-  .parchment-bg {
-    position: fixed; inset: 0; z-index: 0;
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(139,69,19,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(101,67,33,0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(80,40,10,0.08) 0%, transparent 50%),
-      #0a0806;
-  }
+/* APP */
+.app { position: relative; z-index: 1; display: grid; grid-template-columns: 260px 1fr 220px; grid-template-rows: auto 1fr auto; height: 100vh; max-width: 1200px; margin: 0 auto; }
+.top-bar { grid-column: 1/-1; padding: 16px 24px 12px; border-bottom: 1px solid rgba(180,130,50,0.3); display: flex; align-items: center; justify-content: space-between; background: rgba(15,10,5,0.9); flex-shrink: 0; }
+.title-area { display: flex; align-items: center; gap: 16px; }
+.title-area h1 { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: #d4a843; letter-spacing: 2px; text-shadow: 0 0 20px rgba(212,168,67,0.3); }
+.title-area .subtitle { font-size: 13px; color: #8a7050; font-style: italic; }
+.torch-icon { font-size: 22px; animation: flicker 2s infinite; }
+@keyframes flicker { 0%,100%{opacity:1;transform:scale(1)} 25%{opacity:0.85;transform:scale(0.97)} 75%{opacity:0.9;transform:scale(1.02)} }
+.session-badge { font-family: 'Cinzel', serif; font-size: 11px; color: #8a7050; border: 1px solid rgba(138,112,80,0.4); padding: 4px 12px; border-radius: 2px; }
+.edit-char-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: #6a5030; border: 1px solid rgba(100,70,30,0.3); padding: 4px 10px; border-radius: 2px; cursor: pointer; background: transparent; transition: all 0.15s; }
+.edit-char-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.4); }
 
-  .app {
-    position: relative; z-index: 1;
-    display: grid;
-    grid-template-columns: 260px 1fr 220px;
-    grid-template-rows: auto 1fr auto;
-    height: 100vh;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+.left-panel { grid-column: 1; grid-row: 2; border-right: 1px solid rgba(180,130,50,0.2); padding: 20px 16px; background: rgba(8,5,2,0.5); display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
+.panel-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px; color: #6a5030; text-transform: uppercase; margin-bottom: 8px; }
+.char-card { background: rgba(30,20,10,0.7); border: 1px solid rgba(180,130,50,0.25); border-radius: 3px; padding: 14px; }
+.char-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.char-portrait { width: 48px; height: 48px; border-radius: 50%; background: rgba(140,90,20,0.2); border: 2px solid rgba(180,130,50,0.4); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.char-name { font-family: 'Cinzel', serif; font-size: 15px; color: #d4a843; margin-bottom: 2px; }
+.char-class { font-size: 13px; color: #a08050; font-style: italic; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.stat-box { background: rgba(15,10,5,0.8); border: 1px solid rgba(120,90,40,0.3); border-radius: 2px; padding: 6px 4px; text-align: center; }
+.stat-label { font-size: 9px; color: #6a5030; text-transform: uppercase; letter-spacing: 1px; font-family: 'Cinzel', serif; }
+.stat-val { font-size: 18px; font-weight: 600; color: #e8d090; line-height: 1.2; }
+.stat-mod { font-size: 10px; color: #a08050; }
+.hp-bar-wrap { margin-bottom: 10px; }
+.hp-label { display: flex; justify-content: space-between; font-size: 12px; color: #8a7050; margin-bottom: 4px; }
+.hp-bar { height: 6px; background: rgba(20,10,5,0.8); border-radius: 1px; border: 1px solid rgba(120,90,40,0.3); overflow: hidden; }
+.hp-fill { height: 100%; background: linear-gradient(90deg, #8b1a1a, #c0392b); border-radius: 1px; }
+.inventory-list { list-style: none; }
+.inventory-list li { font-size: 13px; color: #a09070; padding: 4px 0; border-bottom: 1px solid rgba(100,70,30,0.15); display: flex; align-items: center; gap: 8px; }
+.inv-dot { width: 4px; height: 4px; background: #6a5030; border-radius: 50%; flex-shrink: 0; }
+.dice-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.die-btn { font-family: 'Cinzel', serif; font-size: 11px; background: rgba(30,20,10,0.8); border: 1px solid rgba(180,130,50,0.3); color: #c4a030; padding: 6px 10px; border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+.die-btn:hover { background: rgba(212,168,67,0.15); border-color: rgba(212,168,67,0.5); color: #d4a843; }
+.die-btn:active { transform: scale(0.94); }
+.roll-result { margin-top: 10px; padding: 8px 10px; background: rgba(15,10,5,0.8); border: 1px solid rgba(180,130,50,0.2); border-radius: 2px; font-family: 'Cinzel', serif; color: #d4a843; text-align: center; min-height: 38px; }
+.roll-label { font-size: 10px; color: #6a5030; letter-spacing: 1px; }
 
-  /* ── TOP BAR ── */
-  .top-bar {
-    grid-column: 1 / -1;
-    padding: 16px 24px 12px;
-    border-bottom: 1px solid rgba(180,130,50,0.3);
-    display: flex; align-items: center; justify-content: space-between;
-    background: rgba(15,10,5,0.9);
-    flex-shrink: 0;
-  }
-  .title-area { display: flex; align-items: center; gap: 16px; }
-  .title-area h1 {
-    font-family: 'Cinzel', serif;
-    font-size: 22px; font-weight: 700;
-    color: #d4a843;
-    letter-spacing: 2px;
-    text-shadow: 0 0 20px rgba(212,168,67,0.3);
-  }
-  .title-area .subtitle { font-size: 13px; color: #8a7050; font-style: italic; }
-  .torch-icon { font-size: 22px; animation: flicker 2s infinite; }
-  @keyframes flicker {
-    0%,100%{opacity:1;transform:scale(1)}
-    25%{opacity:0.85;transform:scale(0.97)}
-    75%{opacity:0.9;transform:scale(1.02)}
-  }
-  .session-badge {
-    font-family: 'Cinzel', serif; font-size: 11px; color: #8a7050;
-    border: 1px solid rgba(138,112,80,0.4); padding: 4px 12px; border-radius: 2px;
-  }
+.main-area { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; background: rgba(10,7,3,0.3); overflow: hidden; }
+.story-log { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.story-log::-webkit-scrollbar { width: 4px; }
+.story-log::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); border-radius: 2px; }
+.msg { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.4s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.msg-dm .msg-header { font-family: 'Cinzel', serif; font-size: 11px; color: #8a5a20; letter-spacing: 1px; }
+.msg-dm .msg-body { font-size: 16px; line-height: 1.7; color: #e0c890; background: rgba(20,13,5,0.5); border-left: 2px solid rgba(180,120,40,0.4); padding: 12px 16px; border-radius: 0 3px 3px 0; }
+.msg-player .msg-header { font-family: 'Cinzel', serif; font-size: 11px; color: #4a7050; letter-spacing: 1px; text-align: right; }
+.msg-player .msg-body { font-size: 15px; line-height: 1.6; color: #b0c8a0; background: rgba(10,20,10,0.4); border-right: 2px solid rgba(70,120,70,0.4); padding: 10px 16px; border-radius: 3px 0 0 3px; text-align: right; }
+.msg-system .msg-body { font-size: 13px; color: #6a5030; text-align: center; font-style: italic; padding: 4px; }
+.roll-msg .msg-body { font-family: 'Cinzel', serif; font-size: 14px; color: #d4a843; text-align: center; padding: 8px; background: rgba(212,168,67,0.05); border: 1px solid rgba(212,168,67,0.15); border-radius: 3px; }
+.thinking { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
+.thinking span { width: 6px; height: 6px; background: #8a6030; border-radius: 50%; animation: bounce 1.2s infinite; }
+.thinking span:nth-child(2){animation-delay:0.2s} .thinking span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
 
-  /* ── LEFT PANEL ── */
-  .left-panel {
-    grid-column: 1; grid-row: 2;
-    border-right: 1px solid rgba(180,130,50,0.2);
-    padding: 20px 16px;
-    background: rgba(8,5,2,0.5);
-    display: flex; flex-direction: column; gap: 18px;
-    overflow-y: auto;
-  }
-  .panel-label {
-    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
-    color: #6a5030; text-transform: uppercase; margin-bottom: 8px;
-  }
-  .char-card {
-    background: rgba(30,20,10,0.7);
-    border: 1px solid rgba(180,130,50,0.25);
-    border-radius: 3px; padding: 14px;
-  }
-  .char-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .char-portrait {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: rgba(140,90,20,0.2); border: 2px solid rgba(180,130,50,0.4);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .char-name { font-family: 'Cinzel', serif; font-size: 15px; color: #d4a843; margin-bottom: 2px; }
-  .char-class { font-size: 13px; color: #a08050; font-style: italic; }
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-  .stat-box {
-    background: rgba(15,10,5,0.8); border: 1px solid rgba(120,90,40,0.3);
-    border-radius: 2px; padding: 6px 4px; text-align: center;
-  }
-  .stat-label { font-size: 9px; color: #6a5030; text-transform: uppercase; letter-spacing: 1px; font-family: 'Cinzel', serif; }
-  .stat-val { font-size: 18px; font-weight: 600; color: #e8d090; line-height: 1.2; }
-  .stat-mod { font-size: 10px; color: #a08050; }
-  .hp-bar-wrap { margin-bottom: 10px; }
-  .hp-label { display: flex; justify-content: space-between; font-size: 12px; color: #8a7050; margin-bottom: 4px; }
-  .hp-bar { height: 6px; background: rgba(20,10,5,0.8); border-radius: 1px; border: 1px solid rgba(120,90,40,0.3); overflow: hidden; }
-  .hp-fill { height: 100%; background: linear-gradient(90deg, #8b1a1a, #c0392b); border-radius: 1px; }
-  .inventory-list { list-style: none; }
-  .inventory-list li {
-    font-size: 13px; color: #a09070; padding: 4px 0;
-    border-bottom: 1px solid rgba(100,70,30,0.15);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .inv-dot { width: 4px; height: 4px; background: #6a5030; border-radius: 50%; flex-shrink: 0; }
-  .dice-row { display: flex; flex-wrap: wrap; gap: 6px; }
-  .die-btn {
-    font-family: 'Cinzel', serif; font-size: 11px;
-    background: rgba(30,20,10,0.8); border: 1px solid rgba(180,130,50,0.3);
-    color: #c4a030; padding: 6px 10px; border-radius: 2px; cursor: pointer;
-    transition: all 0.15s;
-  }
-  .die-btn:hover { background: rgba(212,168,67,0.15); border-color: rgba(212,168,67,0.5); color: #d4a843; }
-  .die-btn:active { transform: scale(0.94); }
-  .roll-result {
-    margin-top: 10px; padding: 8px 10px;
-    background: rgba(15,10,5,0.8); border: 1px solid rgba(180,130,50,0.2);
-    border-radius: 2px; font-family: 'Cinzel', serif; font-size: 18px;
-    color: #d4a843; text-align: center; min-height: 38px;
-  }
-  .roll-label { font-size: 10px; color: #6a5030; letter-spacing: 1px; }
+.input-area { padding: 14px 24px 18px; border-top: 1px solid rgba(180,130,50,0.2); background: rgba(8,5,2,0.7); flex-shrink: 0; }
+.input-row { display: flex; gap: 10px; align-items: flex-end; }
+.action-input { flex: 1; background: rgba(20,13,5,0.8); border: 1px solid rgba(140,100,40,0.4); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 16px; padding: 10px 14px; border-radius: 3px; resize: none; min-height: 42px; max-height: 120px; line-height: 1.5; outline: none; transition: border-color 0.2s; }
+.action-input::placeholder { color: #4a3820; font-style: italic; }
+.action-input:focus { border-color: rgba(212,168,67,0.5); }
+.send-btn { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.4); color: #d4a843; padding: 10px 20px; border-radius: 3px; cursor: pointer; white-space: nowrap; transition: all 0.2s; height: 42px; }
+.send-btn:hover { background: rgba(212,168,67,0.2); border-color: rgba(212,168,67,0.6); }
+.send-btn:active { transform: scale(0.96); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.quick-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.quick-btn { font-size: 12px; color: #6a5030; border: 1px solid rgba(100,70,30,0.3); padding: 4px 10px; border-radius: 2px; cursor: pointer; background: rgba(15,10,5,0.5); transition: all 0.15s; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
+.quick-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.4); background: rgba(30,20,8,0.7); }
 
-  /* ── MAIN AREA ── */
-  .main-area {
-    grid-column: 2; grid-row: 2;
-    display: flex; flex-direction: column;
-    background: rgba(10,7,3,0.3);
-    overflow: hidden;
-  }
-  .story-log {
-    flex: 1; overflow-y: auto; padding: 24px 28px;
-    display: flex; flex-direction: column; gap: 16px;
-    scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent;
-  }
-  .story-log::-webkit-scrollbar { width: 4px; }
-  .story-log::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); border-radius: 2px; }
-  .msg { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.4s ease; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  .msg-dm .msg-header { font-family: 'Cinzel', serif; font-size: 11px; color: #8a5a20; letter-spacing: 1px; }
-  .msg-dm .msg-body {
-    font-size: 16px; line-height: 1.7; color: #e0c890;
-    background: rgba(20,13,5,0.5); border-left: 2px solid rgba(180,120,40,0.4);
-    padding: 12px 16px; border-radius: 0 3px 3px 0;
-  }
-  .msg-player .msg-header { font-family: 'Cinzel', serif; font-size: 11px; color: #4a7050; letter-spacing: 1px; text-align: right; }
-  .msg-player .msg-body {
-    font-size: 15px; line-height: 1.6; color: #b0c8a0;
-    background: rgba(10,20,10,0.4); border-right: 2px solid rgba(70,120,70,0.4);
-    padding: 10px 16px; border-radius: 3px 0 0 3px; text-align: right;
-  }
-  .msg-system .msg-body {
-    font-size: 13px; color: #6a5030; text-align: center; font-style: italic; padding: 4px;
-  }
-  .roll-msg .msg-body {
-    font-family: 'Cinzel', serif; font-size: 14px; color: #d4a843; text-align: center;
-    padding: 8px; background: rgba(212,168,67,0.05); border: 1px solid rgba(212,168,67,0.15); border-radius: 3px;
-  }
-  .thinking { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
-  .thinking span { width: 6px; height: 6px; background: #8a6030; border-radius: 50%; animation: bounce 1.2s infinite; }
-  .thinking span:nth-child(2){animation-delay:0.2s}
-  .thinking span:nth-child(3){animation-delay:0.4s}
-  @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.right-panel { grid-column: 3; grid-row: 2; border-left: 1px solid rgba(180,130,50,0.2); padding: 20px 14px; background: rgba(8,5,2,0.5); display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
+.quest-item { padding: 10px 12px; background: rgba(20,13,5,0.6); border: 1px solid rgba(120,90,40,0.2); border-radius: 3px; margin-bottom: 8px; }
+.quest-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 4px; }
+.quest-desc { font-size: 12px; color: #7a6040; line-height: 1.5; }
+.quest-status { font-size: 10px; color: #4a6040; margin-top: 6px; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
+.location-box { padding: 12px; background: rgba(20,13,5,0.6); border: 1px solid rgba(120,90,40,0.2); border-radius: 3px; }
+.location-name { font-family: 'Cinzel', serif; font-size: 13px; color: #d4a843; margin-bottom: 6px; }
+.location-desc { font-size: 12px; color: #7a6040; line-height: 1.5; font-style: italic; }
+.condition-list { list-style: none; }
+.condition-list li { font-size: 12px; color: #a09070; padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+.cond-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.cond-green { background: #4a8a4a; } .cond-amber { background: #c4a030; }
 
-  /* ── INPUT AREA ── */
-  .input-area {
-    padding: 14px 24px 18px;
-    border-top: 1px solid rgba(180,130,50,0.2);
-    background: rgba(8,5,2,0.7);
-    flex-shrink: 0;
-  }
-  .api-warning {
-    background: rgba(80,40,10,0.4); border: 1px solid rgba(180,100,30,0.4);
-    padding: 7px 12px; border-radius: 3px; font-size: 12px; color: #a07040;
-    margin-bottom: 8px; font-style: italic; text-align: center;
-  }
-  .input-row { display: flex; gap: 10px; align-items: flex-end; }
-  .action-input {
-    flex: 1; background: rgba(20,13,5,0.8);
-    border: 1px solid rgba(140,100,40,0.4);
-    color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 16px;
-    padding: 10px 14px; border-radius: 3px; resize: none;
-    min-height: 42px; max-height: 120px; line-height: 1.5;
-    outline: none; transition: border-color 0.2s;
-  }
-  .action-input::placeholder { color: #4a3820; font-style: italic; }
-  .action-input:focus { border-color: rgba(212,168,67,0.5); }
-  .send-btn {
-    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px;
-    background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.4);
-    color: #d4a843; padding: 10px 20px; border-radius: 3px;
-    cursor: pointer; white-space: nowrap; transition: all 0.2s; height: 42px;
-  }
-  .send-btn:hover { background: rgba(212,168,67,0.2); border-color: rgba(212,168,67,0.6); }
-  .send-btn:active { transform: scale(0.96); }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .quick-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .quick-btn {
-    font-size: 12px; color: #6a5030; border: 1px solid rgba(100,70,30,0.3);
-    padding: 4px 10px; border-radius: 2px; cursor: pointer;
-    background: rgba(15,10,5,0.5); transition: all 0.15s;
-    font-family: 'Cinzel', serif; letter-spacing: 0.5px;
-  }
-  .quick-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.4); background: rgba(30,20,8,0.7); }
+.bottom-bar { grid-column: 1/-1; grid-row: 3; padding: 8px 24px; border-top: 1px solid rgba(100,70,30,0.2); background: rgba(5,3,1,0.9); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.bottom-bar span { font-size: 11px; color: #4a3820; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
 
-  /* ── RIGHT PANEL ── */
-  .right-panel {
-    grid-column: 3; grid-row: 2;
-    border-left: 1px solid rgba(180,130,50,0.2);
-    padding: 20px 14px;
-    background: rgba(8,5,2,0.5);
-    display: flex; flex-direction: column; gap: 18px;
-    overflow-y: auto;
-  }
-  .quest-item {
-    padding: 10px 12px;
-    background: rgba(20,13,5,0.6); border: 1px solid rgba(120,90,40,0.2);
-    border-radius: 3px; margin-bottom: 8px;
-  }
-  .quest-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 4px; }
-  .quest-desc { font-size: 12px; color: #7a6040; line-height: 1.5; }
-  .quest-status { font-size: 10px; color: #4a6040; margin-top: 6px; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
-  .location-box {
-    padding: 12px; background: rgba(20,13,5,0.6);
-    border: 1px solid rgba(120,90,40,0.2); border-radius: 3px;
-  }
-  .location-name { font-family: 'Cinzel', serif; font-size: 13px; color: #d4a843; margin-bottom: 6px; }
-  .location-desc { font-size: 12px; color: #7a6040; line-height: 1.5; font-style: italic; }
-  .condition-list { list-style: none; }
-  .condition-list li { font-size: 12px; color: #a09070; padding: 3px 0; display: flex; align-items: center; gap: 6px; }
-  .cond-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .cond-green { background: #4a8a4a; }
-  .cond-amber { background: #c4a030; }
+#roll-anim { display: none; position: fixed; inset: 0; z-index: 300; pointer-events: none; align-items: center; justify-content: center; }
+#roll-anim .roll-pop { font-family: 'Cinzel', serif; font-size: 80px; color: #d4a843; text-shadow: 0 0 40px rgba(212,168,67,0.6); animation: rollPop 0.8s ease forwards; }
+@keyframes rollPop { 0%{opacity:0;transform:scale(0.5) rotate(-20deg)} 30%{opacity:1;transform:scale(1.2) rotate(5deg)} 60%{opacity:1;transform:scale(1) rotate(0deg)} 100%{opacity:0;transform:scale(0.8)} }
 
-  /* ── BOTTOM BAR ── */
-  .bottom-bar {
-    grid-column: 1 / -1; grid-row: 3;
-    padding: 8px 24px;
-    border-top: 1px solid rgba(100,70,30,0.2);
-    background: rgba(5,3,1,0.9);
-    display: flex; justify-content: space-between; align-items: center;
-    flex-shrink: 0;
-  }
-  .bottom-bar span { font-size: 11px; color: #4a3820; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
-
-  /* ── DICE ANIMATION ── */
-  #roll-anim {
-    display: none; position: fixed; inset: 0; z-index: 100;
-    pointer-events: none; align-items: center; justify-content: center;
-  }
-  #roll-anim .roll-pop {
-    font-family: 'Cinzel', serif; font-size: 80px; color: #d4a843;
-    text-shadow: 0 0 40px rgba(212,168,67,0.6);
-    animation: rollPop 0.8s ease forwards;
-  }
-  @keyframes rollPop {
-    0%{opacity:0;transform:scale(0.5) rotate(-20deg)}
-    30%{opacity:1;transform:scale(1.2) rotate(5deg)}
-    60%{opacity:1;transform:scale(1) rotate(0deg)}
-    100%{opacity:0;transform:scale(0.8)}
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 900px) {
-    .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; height: auto; }
-    .top-bar { grid-column: 1; }
-    .left-panel { grid-column: 1; grid-row: 2; border-right: none; border-bottom: 1px solid rgba(180,130,50,0.2); flex-direction: row; flex-wrap: wrap; }
-    .main-area { grid-column: 1; grid-row: 3; min-height: 400px; }
-    .right-panel { grid-column: 1; grid-row: 4; border-left: none; border-top: 1px solid rgba(180,130,50,0.2); flex-direction: row; flex-wrap: wrap; }
-    .bottom-bar { grid-column: 1; grid-row: 5; }
-    .story-log { max-height: 50vh; }
-  }
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; height: auto; }
+  .top-bar,.bottom-bar { grid-column: 1; }
+  .left-panel { grid-column: 1; grid-row: 2; border-right: none; border-bottom: 1px solid rgba(180,130,50,0.2); }
+  .main-area { grid-column: 1; grid-row: 3; min-height: 400px; }
+  .right-panel { grid-column: 1; grid-row: 4; border-left: none; border-top: 1px solid rgba(180,130,50,0.2); }
+  .bottom-bar { grid-row: 5; }
+  .story-log { max-height: 50vh; }
+  .stat-creator-grid { grid-template-columns: repeat(3,1fr); }
+  .field-row.three { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
+
+<!-- CHARACTER CREATOR MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">🕯 FORGE YOUR HERO</div>
+    <div class="modal-sub">Create your character before entering the realm</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Identity</div>
+      <div class="field-row">
+        <div class="field"><label>Character Name</label><input type="text" id="c-name" placeholder="e.g. Aldric Voss" maxlength="40"></div>
+        <div class="field"><label>Race</label>
+          <select id="c-race">
+            <option>Human</option><option>Elf</option><option>Dwarf</option><option>Halfling</option>
+            <option>Half-Elf</option><option>Half-Orc</option><option>Tiefling</option><option>Gnome</option>
+            <option>Dragonborn</option><option>Aasimar</option><option>Tabaxi</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Class</label>
+          <select id="c-class">
+            <option>Barbarian</option><option>Bard</option><option>Cleric</option><option>Druid</option>
+            <option>Fighter</option><option>Monk</option><option>Paladin</option><option>Ranger</option>
+            <option>Rogue</option><option>Sorcerer</option><option>Warlock</option><option selected>Wizard</option>
+          </select>
+        </div>
+        <div class="field"><label>Level (1–20)</label><input type="number" id="c-level" value="1" min="1" max="20"></div>
+      </div>
+      <div class="field-row single">
+        <div class="field"><label>Background / Backstory (optional)</label>
+          <textarea id="c-backstory" placeholder="e.g. A former court wizard seeking redemption after a spell went terribly wrong..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Ability Scores</div>
+      <div class="stat-creator-grid" id="stat-creator-grid"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Hit Points &amp; Defences</div>
+      <div class="field-row three">
+        <div class="field"><label>Current HP</label><input type="number" id="c-hp-cur" value="10" min="1" max="999"></div>
+        <div class="field"><label>Maximum HP</label><input type="number" id="c-hp-max" value="10" min="1" max="999"></div>
+        <div class="field"><label>Armour Class</label><input type="number" id="c-ac" value="12" min="1" max="30"></div>
+      </div>
+      <div class="field-row single">
+        <div class="field"><label>Special Resources — spell slots, ki, rage, etc. (optional)</label>
+          <input type="text" id="c-resources" placeholder="e.g. Spell Slots: 4/4 (1st), 3/3 (2nd), 2/2 (3rd)">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Starting Inventory</div>
+      <div class="field-row single">
+        <div class="field"><label>Items — one per line</label>
+          <textarea id="c-inventory" style="min-height:100px" placeholder="Longsword&#10;Chain Mail&#10;Potion of Healing x2&#10;Rope (50ft)&#10;50 gold pieces"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Portrait</div>
+      <div class="portrait-grid" id="portrait-grid"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">API Key</div>
+      <div class="field-row single">
+        <div class="field"><label>Google Gemini API Key — free at aistudio.google.com</label>
+          <input type="password" id="c-apikey" placeholder="AIza...">
+        </div>
+      </div>
+    </div>
+
+    <div id="creator-error" class="error-msg"></div>
+    <button class="begin-btn" onclick="beginAdventure()">⚔ BEGIN YOUR ADVENTURE ⚔</button>
+  </div>
+</div>
 
 <div id="roll-anim"><div class="roll-pop" id="roll-pop-val"></div></div>
 <div class="parchment-bg"></div>
 
 <div class="app">
-
-  <!-- TOP BAR -->
   <div class="top-bar">
     <div class="title-area">
       <span class="torch-icon">🕯</span>
@@ -295,50 +242,38 @@
         <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience</div>
       </div>
     </div>
-    <div class="session-badge">SESSION I · THE VALE OF SHADOWS</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="edit-char-btn" onclick="openCreator()">✎ Edit Character</button>
+      <div class="session-badge" id="session-badge">SESSION I</div>
+    </div>
   </div>
 
-  <!-- LEFT PANEL -->
   <div class="left-panel">
     <div>
       <div class="panel-label">Your Character</div>
       <div class="char-card">
         <div class="char-header">
-          <div class="char-portrait">🧙</div>
+          <div class="char-portrait" id="display-portrait">🧙</div>
           <div>
-            <div class="char-name">Aldric Voss</div>
-            <div class="char-class">Lvl 5 · Human Wizard</div>
+            <div class="char-name" id="display-name">—</div>
+            <div class="char-class" id="display-class">—</div>
           </div>
         </div>
-        <div class="stats-grid">
-          <div class="stat-box"><div class="stat-label">STR</div><div class="stat-val">8</div><div class="stat-mod">-1</div></div>
-          <div class="stat-box"><div class="stat-label">DEX</div><div class="stat-val">14</div><div class="stat-mod">+2</div></div>
-          <div class="stat-box"><div class="stat-label">CON</div><div class="stat-val">12</div><div class="stat-mod">+1</div></div>
-          <div class="stat-box"><div class="stat-label">INT</div><div class="stat-val">18</div><div class="stat-mod">+4</div></div>
-          <div class="stat-box"><div class="stat-label">WIS</div><div class="stat-val">13</div><div class="stat-mod">+1</div></div>
-          <div class="stat-box"><div class="stat-label">CHA</div><div class="stat-val">10</div><div class="stat-mod">+0</div></div>
-        </div>
+        <div class="stats-grid" id="display-stats"></div>
         <div class="hp-bar-wrap">
-          <div class="hp-label"><span>Hit Points</span><span>32 / 38</span></div>
-          <div class="hp-bar"><div class="hp-fill" style="width:84%"></div></div>
+          <div class="hp-label"><span>Hit Points</span><span id="display-hp">— / —</span></div>
+          <div class="hp-bar"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
         </div>
-        <div class="hp-bar-wrap">
-          <div class="hp-label"><span>Spell Slots (3rd)</span><span>2 / 3</span></div>
-          <div class="hp-bar"><div class="hp-fill" style="width:66%;background:linear-gradient(90deg,#2a3a8a,#4a6ac0)"></div></div>
-        </div>
+        <div class="hp-label" style="margin-bottom:8px;"><span>Armour Class</span><span id="display-ac">—</span></div>
+        <div id="display-resources" style="font-size:12px;color:#7a6040;font-style:italic;"></div>
       </div>
     </div>
 
     <div>
       <div class="panel-label">Inventory</div>
       <div class="char-card">
-        <ul class="inventory-list">
-          <li><span class="inv-dot"></span>Arcane Staff +1</li>
-          <li><span class="inv-dot"></span>Spellbook (13 spells)</li>
-          <li><span class="inv-dot"></span>Potion of Healing ×2</li>
-          <li><span class="inv-dot"></span>Rope (50ft)</li>
-          <li><span class="inv-dot"></span>Scroll of Identify</li>
-          <li><span class="inv-dot"></span>47 gold pieces</li>
+        <ul class="inventory-list" id="display-inventory">
+          <li style="color:#4a3820;font-style:italic">Create your character to see inventory</li>
         </ul>
       </div>
     </div>
@@ -354,35 +289,15 @@
         <button class="die-btn" onclick="rollDie(20)">d20</button>
         <button class="die-btn" onclick="rollDie(100)">d100</button>
       </div>
-      <div class="roll-result" id="roll-result">
-        <div class="roll-label">ROLL A DIE</div>
-      </div>
+      <div class="roll-result" id="roll-result"><div class="roll-label">ROLL A DIE</div></div>
     </div>
   </div>
 
-  <!-- MAIN AREA -->
   <div class="main-area">
     <div class="story-log" id="story-log">
-      <div class="msg msg-system"><div class="msg-body">⚔ The Dungeon Master awakens... ⚔</div></div>
-      <div class="msg msg-dm">
-        <div class="msg-header">🎲 DUNGEON MASTER</div>
-        <div class="msg-body">
-          The last echoes of the tavern fade behind you as you step into the cold night air of Millhaven. Torches flicker against rain-slicked cobblestones, casting long shadows between the crooked buildings. Your contact, a nervous merchant named Elara, pressed a crumpled map into your hands before disappearing into the crowd.<br><br>
-          The map leads to the <em>Vale of Shadows</em> — a place the locals refuse to speak of by name. Three days north. Strange disappearances. A reward of 500 gold.<br><br>
-          Your horse is stabled at the edge of town. The eastern gate stands open, but so does the door to the <em>Broken Lantern Inn</em>, where light and laughter still pour into the street.<br><br>
-          <strong>What do you do?</strong>
-        </div>
-      </div>
+      <div class="msg msg-system"><div class="msg-body">⚔ Forge your hero to begin the adventure ⚔</div></div>
     </div>
-
     <div class="input-area">
-      <div class="api-warning" id="api-warning">🔑 Enter your free Google Gemini API key below to awaken the Dungeon Master</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;" id="api-key-row">
-        <input type="password" id="api-key-input" class="action-input"
-          style="min-height:36px;max-height:36px;font-size:13px;font-family:monospace;"
-          placeholder="AIza...  (get yours free at aistudio.google.com)">
-        <button class="send-btn" onclick="saveApiKey()" style="font-size:11px;padding:8px 14px;height:36px;">SAVE KEY</button>
-      </div>
       <div class="input-row">
         <textarea class="action-input" id="player-input"
           placeholder="Describe your action, speak to an NPC, cast a spell, investigate something..."
@@ -391,16 +306,15 @@
       </div>
       <div class="quick-actions">
         <button class="quick-btn" onclick="quickAction('I investigate my surroundings carefully, looking for anything unusual.')">Investigate</button>
-        <button class="quick-btn" onclick="quickAction('I ask the nearest person if they know anything useful about the Vale.')">Ask NPC</button>
-        <button class="quick-btn" onclick="quickAction('I cast Detect Magic and carefully scan the area.')">Cast Spell</button>
-        <button class="quick-btn" onclick="quickAction('I draw my weapon and prepare for combat.')">Combat Stance</button>
+        <button class="quick-btn" onclick="quickAction('I ask the nearest person if they know anything useful.')">Ask NPC</button>
+        <button class="quick-btn" onclick="quickAction('I ready a weapon or spell and prepare for combat.')">Combat Stance</button>
         <button class="quick-btn" onclick="quickAction('I attempt to move through the area without being noticed.')">Stealth</button>
+        <button class="quick-btn" onclick="quickAction('I search for traps, secrets, or hidden items.')">Search</button>
         <button class="quick-btn" onclick="quickAction('I make camp and rest for the night to recover my strength.')">Rest</button>
       </div>
     </div>
   </div>
 
-  <!-- RIGHT PANEL -->
   <div class="right-panel">
     <div>
       <div class="panel-label">Current Location</div>
@@ -409,21 +323,19 @@
         <div class="location-desc">A rain-soaked merchant town at the edge of the Greywood. The locals are superstitious and tight-lipped.</div>
       </div>
     </div>
-
     <div>
       <div class="panel-label">Active Quests</div>
       <div class="quest-item">
         <div class="quest-title">The Vale of Shadows</div>
-        <div class="quest-desc">Investigate the disappearances in the vale north of Millhaven. Reward: 500gp from merchant Elara.</div>
+        <div class="quest-desc">Investigate the disappearances north of Millhaven. Reward: 500gp.</div>
         <div class="quest-status">● IN PROGRESS</div>
       </div>
       <div class="quest-item">
         <div class="quest-title">Elara's Warning</div>
-        <div class="quest-desc">The merchant seemed terrified of something. Find out what she truly knows.</div>
+        <div class="quest-desc">The merchant seemed terrified. Find out what she truly knows.</div>
         <div class="quest-status">○ DISCOVERED</div>
       </div>
     </div>
-
     <div>
       <div class="panel-label">Conditions &amp; Status</div>
       <div class="char-card">
@@ -431,223 +343,275 @@
           <li><span class="cond-dot cond-green"></span>Healthy</li>
           <li><span class="cond-dot cond-green"></span>Well-rested</li>
           <li><span class="cond-dot cond-amber"></span>Slightly Hungry</li>
-          <li><span class="cond-dot cond-green"></span>Spell Slots Available</li>
         </ul>
       </div>
     </div>
-
     <div>
       <div class="panel-label">Recent Events</div>
       <div style="font-size:12px;color:#5a4030;font-style:italic;line-height:1.8;" id="events-log">
-        Arrived in Millhaven at dusk.<br>
-        Received map from merchant Elara.<br>
-        The inn is still open nearby.
+        Arrived in Millhaven at dusk.<br>Received map from merchant Elara.
       </div>
     </div>
   </div>
 
-  <!-- BOTTOM BAR -->
   <div class="bottom-bar">
     <span>CHRONICLE &amp; SHADOW · POWERED BY GEMINI</span>
-    <span id="turn-count">TURN 1</span>
+    <span id="turn-count">TURN 0</span>
     <span>D&amp;D 5E RULES</span>
   </div>
-
-</div><!-- end .app -->
+</div>
 
 <script>
-  let apiKey = '';
-  let conversationHistory = [];
-  let turnCount = 1;
+const PORTRAITS = ['🧙','🧝','🧛','🗡','🛡','🏹','🔮','⚔','🌿','🔥','💀','🐉','🦅','🐺','🌙','✨','🎭','🗺'];
+const STATS = ['STR','DEX','CON','INT','WIS','CHA'];
+let selectedPortrait = '🧙';
+let apiKey = '';
+let character = null;
+let conversationHistory = [];
+let turnCount = 0;
+let gameStarted = false;
 
-  const systemPrompt = `You are an expert, immersive Dungeons & Dragons 5th Edition Dungeon Master. Your name is the "Ancient Voice." You are running a solo campaign called "The Vale of Shadows."
+// Build portrait picker
+const portraitGrid = document.getElementById('portrait-grid');
+PORTRAITS.forEach(p => {
+  const el = document.createElement('div');
+  el.className = 'portrait-opt' + (p === selectedPortrait ? ' selected' : '');
+  el.textContent = p;
+  el.onclick = () => {
+    document.querySelectorAll('.portrait-opt').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPortrait = p;
+  };
+  portraitGrid.appendChild(el);
+});
 
-SETTING: A dark fantasy world with medieval atmosphere. The player is Aldric Voss, a Level 5 Human Wizard (STR 8, DEX 14, CON 12, INT 18, WIS 13, CHA 10). He has 32/38 HP and 2/3 third-level spell slots remaining.
+// Build stat inputs
+function statMod(v) { const m = Math.floor((parseInt(v)||10 - 10)/2); return (m>=0?'+':'')+m; }
+const statGrid = document.getElementById('stat-creator-grid');
+STATS.forEach(stat => {
+  const box = document.createElement('div');
+  box.className = 'stat-creator-box';
+  box.innerHTML = `<label>${stat}</label><input type="number" id="cs-${stat}" value="10" min="1" max="30"><div class="stat-modifier" id="csm-${stat}">+0</div>`;
+  statGrid.appendChild(box);
+  box.querySelector('input').addEventListener('input', e => {
+    document.getElementById('csm-'+stat).textContent = statMod(e.target.value);
+  });
+});
+
+function openCreator() {
+  if (character) {
+    document.getElementById('c-name').value = character.name;
+    document.getElementById('c-race').value = character.race;
+    document.getElementById('c-class').value = character.charClass;
+    document.getElementById('c-level').value = character.level;
+    document.getElementById('c-backstory').value = character.backstory;
+    document.getElementById('c-hp-cur').value = character.hpCur;
+    document.getElementById('c-hp-max').value = character.hpMax;
+    document.getElementById('c-ac').value = character.ac;
+    document.getElementById('c-resources').value = character.resources;
+    document.getElementById('c-inventory').value = character.inventory.join('\n');
+    STATS.forEach(s => {
+      const inp = document.getElementById('cs-'+s);
+      inp.value = character.stats[s];
+      document.getElementById('csm-'+s).textContent = statMod(character.stats[s]);
+    });
+    selectedPortrait = character.portrait;
+    document.querySelectorAll('.portrait-opt').forEach(el => {
+      el.classList.toggle('selected', el.textContent === selectedPortrait);
+    });
+  }
+  document.getElementById('creator-error').textContent = '';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function beginAdventure() {
+  const err = document.getElementById('creator-error');
+  err.textContent = '';
+  const name = document.getElementById('c-name').value.trim();
+  const keyInput = document.getElementById('c-apikey').value.trim();
+  if (!name) { err.textContent = 'Please give your character a name.'; return; }
+  if (!keyInput && !apiKey) { err.textContent = 'Please enter your Gemini API key (starts with AIza).'; return; }
+  if (keyInput && !keyInput.startsWith('AIza')) { err.textContent = 'That doesn\'t look like a valid Gemini key — it should start with AIza.'; return; }
+
+  const stats = {};
+  STATS.forEach(s => { stats[s] = parseInt(document.getElementById('cs-'+s).value)||10; });
+
+  const wasStarted = gameStarted;
+  character = {
+    name, portrait: selectedPortrait,
+    race: document.getElementById('c-race').value,
+    charClass: document.getElementById('c-class').value,
+    level: parseInt(document.getElementById('c-level').value)||1,
+    backstory: document.getElementById('c-backstory').value.trim(),
+    stats,
+    hpCur: parseInt(document.getElementById('c-hp-cur').value)||10,
+    hpMax: parseInt(document.getElementById('c-hp-max').value)||10,
+    ac: parseInt(document.getElementById('c-ac').value)||12,
+    resources: document.getElementById('c-resources').value.trim(),
+    inventory: document.getElementById('c-inventory').value.split('\n').map(l=>l.trim()).filter(Boolean)
+  };
+  if (keyInput) apiKey = keyInput;
+
+  applyCharacterToUI();
+  document.getElementById('modal-overlay').classList.add('hidden');
+
+  if (!wasStarted) {
+    startGame();
+  } else {
+    addMessage('system', null, `✎ Character updated: ${character.name} the ${character.race} ${character.charClass}, Level ${character.level}.`);
+  }
+}
+
+function applyCharacterToUI() {
+  document.getElementById('display-portrait').textContent = character.portrait;
+  document.getElementById('display-name').textContent = character.name;
+  document.getElementById('display-class').textContent = `Lvl ${character.level} · ${character.race} ${character.charClass}`;
+  document.getElementById('display-hp').textContent = `${character.hpCur} / ${character.hpMax}`;
+  document.getElementById('hp-fill').style.width = Math.max(0,Math.min(100,(character.hpCur/character.hpMax)*100))+'%';
+  document.getElementById('display-ac').textContent = character.ac;
+  document.getElementById('display-resources').textContent = character.resources;
+  document.getElementById('display-stats').innerHTML = STATS.map(s => {
+    const v = character.stats[s];
+    return `<div class="stat-box"><div class="stat-label">${s}</div><div class="stat-val">${v}</div><div class="stat-mod">${statMod(v)}</div></div>`;
+  }).join('');
+  document.getElementById('display-inventory').innerHTML = character.inventory.length
+    ? character.inventory.map(i=>`<li><span class="inv-dot"></span>${i}</li>`).join('')
+    : '<li style="color:#4a3820;font-style:italic">No items</li>';
+  document.getElementById('session-badge').textContent = `SESSION I · ${character.name.toUpperCase()}`;
+}
+
+function buildSystemPrompt() {
+  const statLines = STATS.map(s=>`${s} ${character.stats[s]} (${statMod(character.stats[s])})`).join(', ');
+  return `You are an expert, immersive Dungeons & Dragons 5th Edition Dungeon Master called "the Ancient Voice." You are running a solo campaign: The Vale of Shadows.
+
+PLAYER CHARACTER:
+- Name: ${character.name}
+- Race & Class: ${character.race} ${character.charClass}, Level ${character.level}
+- Stats: ${statLines}
+- HP: ${character.hpCur}/${character.hpMax} | AC: ${character.ac}
+${character.resources?'- Resources: '+character.resources:''}
+${character.backstory?'- Backstory: '+character.backstory:''}
+- Inventory: ${character.inventory.length?character.inventory.join(', '):'Basic adventuring gear'}
 
 YOUR ROLE:
-- Narrate events vividly and atmospherically, in 2nd person ("You see...", "You hear...")
-- Enforce D&D 5E rules: ability checks, saving throws, skill checks
-- When dice rolls are needed, tell the player exactly what to roll (e.g. "Roll a Perception check — d20 + your Wisdom modifier (+1)")
-- Describe consequences of the player's actions realistically and fairly
-- Include NPC dialogue with distinct, memorable voices
-- Create tension, mystery, and atmosphere at all times
-- Track continuity of the story carefully across messages
-- Always end your narration with a clear situation or question for the player
+- Narrate in 2nd person ("You see...", "You hear...")
+- Enforce D&D 5E rules. Call for ability checks using the character's actual modifiers above.
+- When dice are needed, specify exactly what to roll (e.g. "Roll Perception — d20 + Wisdom modifier")
+- Give NPCs distinct voices. Create tension and atmosphere.
+- Track story continuity across messages.
+- Always end with a clear situation or question for the player.
 
-STYLE:
-- Evocative, literary prose (think Tolkien meets George R.R. Martin)
-- Rich sensory details — sights, sounds, smells, textures, temperatures
-- Meaningful choices with real consequences
-- Dark fantasy tone — danger is real, victory must be earned
-- Use italics for emphasis on important details
+STYLE: Evocative literary prose, rich sensory detail, dark fantasy tone. 2-4 paragraphs per response.`;
+}
 
-Keep responses to 2-4 paragraphs unless combat or complex events require more. Always end with what the player can do next or a direct question.`;
+function startGame() {
+  gameStarted = true; turnCount = 1;
+  conversationHistory = [];
+  document.getElementById('story-log').innerHTML = '';
+  document.getElementById('turn-count').textContent = 'TURN 1';
+  addMessage('system', null, `⚔ ${character.name} the ${character.race} ${character.charClass} enters the realm... ⚔`);
+  const opener = `The last echoes of the tavern fade behind you as you step into the cold night air of Millhaven. Torches flicker against rain-slicked cobblestones, casting long shadows between the crooked buildings. A nervous merchant pressed a crumpled map into your hands before disappearing into the crowd — her eyes wide with a fear she refused to name.\n\nThe map leads to the Vale of Shadows — a place the locals refuse to speak of by name. Three days north. Strange disappearances. A reward of 500 gold.\n\nYour supplies are ready and the eastern gate stands open, but so does the door to the Broken Lantern Inn, where warmth and the smell of ale still spill into the street.\n\nWhat do you do, ${character.name}?`;
+  conversationHistory.push({ role: 'assistant', content: opener });
+  addMessage('dm', '🎲 DUNGEON MASTER', opener);
+}
 
-  // Seed conversation with the opening
-  conversationHistory.push({
-    role: 'assistant',
-    content: `The last echoes of the tavern fade behind you as you step into the cold night air of Millhaven. Torches flicker against rain-slicked cobblestones, casting long shadows between the crooked buildings. Your contact, a nervous merchant named Elara, pressed a crumpled map into your hands before disappearing into the crowd.
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAction();} }
+function quickAction(text) { document.getElementById('player-input').value=text; sendAction(); }
 
-The map leads to the Vale of Shadows — a place the locals refuse to speak of by name. Three days north. Strange disappearances. A reward of 500 gold.
+async function sendAction() {
+  if (!gameStarted || !character) { openCreator(); return; }
+  if (!apiKey) { openCreator(); return; }
+  const input = document.getElementById('player-input');
+  const text = input.value.trim();
+  if (!text) return;
 
-Your horse is stabled at the edge of town. The eastern gate stands open, but so does the door to the Broken Lantern Inn, where light and laughter still pour into the street.
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; input.value = '';
+  turnCount++;
+  document.getElementById('turn-count').textContent = 'TURN ' + turnCount;
+  addMessage('player', character.name.toUpperCase(), text);
+  conversationHistory.push({ role: 'user', content: text });
+  const thinkEl = addThinking();
 
-What do you do?`
-  });
-
-  function saveApiKey() {
-    const input = document.getElementById('api-key-input');
-    const key = input.value.trim();
-    if (!key.startsWith('AIza')) {
-      input.style.borderColor = 'rgba(180,50,50,0.6)';
-      setTimeout(() => input.style.borderColor = '', 1500);
-      return;
-    }
-    apiKey = key;
-    input.value = '';
-    const warning = document.getElementById('api-warning');
-    warning.textContent = '✓ Dungeon Master is ready (Google Gemini). Your adventure begins!';
-    warning.style.color = '#4a8a4a';
-    warning.style.borderColor = 'rgba(70,140,70,0.4)';
-    warning.style.background = 'rgba(10,30,10,0.4)';
-    document.getElementById('api-key-row').style.display = 'none';
-    addMessage('system', null, '⚔ The Ancient Voice stirs... The adventure begins. ⚔');
-  }
-
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAction(); }
-  }
-
-  function quickAction(text) {
-    document.getElementById('player-input').value = text;
-    sendAction();
-  }
-
-  async function sendAction() {
-    if (!apiKey) {
-      const warning = document.getElementById('api-warning');
-      warning.style.color = '#c44030';
-      warning.textContent = '⚠ Please enter your Anthropic API key first!';
-      setTimeout(() => {
-        warning.style.color = '#a07040';
-        warning.textContent = '🔑 Enter your free Google Gemini API key above to awaken the Dungeon Master';
-      }, 2500);
-      return;
-    }
-    const input = document.getElementById('player-input');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const btn = document.getElementById('send-btn');
-    btn.disabled = true;
-    input.value = '';
-    turnCount++;
-    document.getElementById('turn-count').textContent = 'TURN ' + turnCount;
-
-    addMessage('player', 'ALDRIC VOSS', text);
-    conversationHistory.push({ role: 'user', content: text });
-
-    const thinkEl = addThinking();
-
-    try {
-      // Build Gemini contents array: prepend system prompt as first user/model turn
-      const geminiContents = [
-        { role: 'user', parts: [{ text: systemPrompt + '\n\nAcknowledge your role briefly and await the adventure.' }] },
-        { role: 'model', parts: [{ text: 'Understood. I am the Ancient Voice, your Dungeon Master. I will narrate your adventure with rich detail, enforce D&D 5E rules, and await your actions.' }] },
-        ...conversationHistory.map(m => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }]
-        }))
-      ];
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: geminiContents,
-            generationConfig: { maxOutputTokens: 1024, temperature: 0.9 }
-          })
-        }
-      );
-
-      const data = await response.json();
-      thinkEl.remove();
-
-      if (data.error) {
-        addMessage('system', null, '⚠ The Ancient Voice falters: ' + data.error.message);
-        conversationHistory.pop();
-      } else {
-        const reply = data.candidates[0].content.parts[0].text;
-        conversationHistory.push({ role: 'assistant', content: reply });
-        addMessage('dm', '🎲 DUNGEON MASTER', reply);
-        updateEventsLog(text);
-      }
-    } catch (err) {
-      thinkEl.remove();
-      addMessage('system', null, '⚠ The connection to the realm falters... Check your API key and try again.');
+  try {
+    const geminiContents = [
+      { role: 'user', parts: [{ text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.' }] },
+      { role: 'model', parts: [{ text: 'Understood. I am the Ancient Voice. I will guide this adventure with D&D 5E rules and vivid narration.' }] },
+      ...conversationHistory.map(m => ({ role: m.role==='assistant'?'model':'user', parts: [{ text: m.content }] }))
+    ];
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: geminiContents, generationConfig: { maxOutputTokens: 1024, temperature: 0.9 } }) }
+    );
+    const data = await response.json();
+    thinkEl.remove();
+    if (data.error) {
+      addMessage('system', null, '⚠ The Ancient Voice falters: ' + data.error.message);
       conversationHistory.pop();
-      console.error(err);
+    } else {
+      const reply = data.candidates[0].content.parts[0].text;
+      conversationHistory.push({ role: 'assistant', content: reply });
+      addMessage('dm', '🎲 DUNGEON MASTER', reply);
+      updateEventsLog(text);
     }
-
-    btn.disabled = false;
-    input.focus();
+  } catch(err) {
+    thinkEl.remove();
+    addMessage('system', null, '⚠ The connection to the realm falters... Check your API key and try again.');
+    conversationHistory.pop();
+    console.error(err);
   }
+  btn.disabled = false; input.focus();
+}
 
-  function addMessage(type, header, body) {
-    const log = document.getElementById('story-log');
-    const msg = document.createElement('div');
-    msg.className = 'msg msg-' + type;
-    let html = '';
-    if (header) html += '<div class="msg-header">' + header + '</div>';
-    html += '<div class="msg-body">' + body.replace(/\n/g, '<br>') + '</div>';
-    msg.innerHTML = html;
-    log.appendChild(msg);
-    log.scrollTop = log.scrollHeight;
-    return msg;
+function addMessage(type, header, body) {
+  const log = document.getElementById('story-log');
+  const msg = document.createElement('div');
+  msg.className = 'msg msg-' + type;
+  let html = header ? '<div class="msg-header">'+header+'</div>' : '';
+  html += '<div class="msg-body">'+body.replace(/\n/g,'<br>')+'</div>';
+  msg.innerHTML = html;
+  log.appendChild(msg);
+  log.scrollTop = log.scrollHeight;
+  return msg;
+}
+
+function addThinking() {
+  const log = document.getElementById('story-log');
+  const el = document.createElement('div');
+  el.className = 'msg msg-dm';
+  el.innerHTML = '<div class="msg-header">🎲 DUNGEON MASTER</div><div class="thinking"><span></span><span></span><span></span></div>';
+  log.appendChild(el); log.scrollTop = log.scrollHeight;
+  return el;
+}
+
+function updateEventsLog(action) {
+  const el = document.getElementById('events-log');
+  const short = action.length>48 ? action.substring(0,45)+'...' : action;
+  const lines = el.innerHTML.split('<br>').filter(Boolean);
+  lines.push(short);
+  el.innerHTML = lines.slice(-6).join('<br>');
+}
+
+function rollDie(sides) {
+  const result = Math.floor(Math.random()*sides)+1;
+  const isCrit=sides===20&&result===20, isFumble=sides===20&&result===1;
+  document.getElementById('roll-result').innerHTML =
+    `<div style="font-size:26px;font-weight:600;color:${isCrit?'#e8d843':isFumble?'#c04030':'#d4a843'}">${result}</div>
+     <div class="roll-label">d${sides}${isCrit?' — CRITICAL HIT!':isFumble?' — FUMBLE!':''}</div>`;
+  const val = document.getElementById('roll-pop-val');
+  val.textContent = result;
+  val.style.color = isCrit?'#e8d843':isFumble?'#c04030':'#d4a843';
+  const anim = document.getElementById('roll-anim');
+  anim.style.display = 'flex';
+  setTimeout(()=>anim.style.display='none', 850);
+  if (gameStarted) {
+    addMessage('roll', null, isCrit?'⚔ CRITICAL HIT — Natural 20!':isFumble?'💀 FUMBLE — Natural 1!':`🎲 Rolled d${sides}: ${result}`);
   }
+}
 
-  function addThinking() {
-    const log = document.getElementById('story-log');
-    const el = document.createElement('div');
-    el.className = 'msg msg-dm';
-    el.innerHTML = '<div class="msg-header">🎲 DUNGEON MASTER</div><div class="thinking"><span></span><span></span><span></span></div>';
-    log.appendChild(el);
-    log.scrollTop = log.scrollHeight;
-    return el;
-  }
-
-  function updateEventsLog(action) {
-    const el = document.getElementById('events-log');
-    const short = action.length > 48 ? action.substring(0, 45) + '...' : action;
-    const lines = el.innerHTML.split('<br>').filter(Boolean);
-    lines.push(short);
-    el.innerHTML = lines.slice(-6).join('<br>');
-  }
-
-  function rollDie(sides) {
-    const result = Math.floor(Math.random() * sides) + 1;
-    const isCrit   = sides === 20 && result === 20;
-    const isFumble = sides === 20 && result === 1;
-
-    const el = document.getElementById('roll-result');
-    el.innerHTML = `
-      <div style="font-size:26px;font-weight:600;color:${isCrit?'#e8d843':isFumble?'#c04030':'#d4a843'}">${result}</div>
-      <div class="roll-label">d${sides}${isCrit?' — CRITICAL HIT!':isFumble?' — FUMBLE!':''}</div>`;
-
-    const anim = document.getElementById('roll-anim');
-    const val  = document.getElementById('roll-pop-val');
-    val.textContent = result;
-    val.style.color = isCrit ? '#e8d843' : isFumble ? '#c04030' : '#d4a843';
-    anim.style.display = 'flex';
-    setTimeout(() => anim.style.display = 'none', 850);
-
-    if (apiKey) {
-      const label = isCrit ? '⚔ CRITICAL HIT — Natural 20!' : isFumble ? '💀 FUMBLE — Natural 1!' : `🎲 Rolled d${sides}: ${result}`;
-      addMessage('roll', null, label);
-    }
-  }
+// Open creator on load
+openCreator();
 </script>
 </body>
 </html>

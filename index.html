@@ -190,9 +190,31 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
 .save-btn.primary:hover { border-color: rgba(212,168,67,0.6); color: #d4a843; background: rgba(212,168,67,0.07); }
 .save-btn.danger { border: 1px solid rgba(120,50,40,0.4); color: #5a2828; }
 .save-btn.danger:hover { border-color: rgba(180,60,50,0.5); color: #c04030; }
-.save-status { font-family: 'Cinzel', serif; font-size: 10px; color: #3a2810; margin-left: auto; letter-spacing: 0.5px; min-width: 120px; text-align: right; }
+.save-status { font-family: 'Cinzel', serif; font-size: 10px; color: #3a2810; margin-left: auto; letter-spacing: 0.5px; text-align: right; }
 #toast { position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%); z-index: 400; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; padding: 10px 22px; border-radius: 3px; border: 1px solid rgba(212,168,67,0.4); background: rgba(16,11,5,0.97); color: #d4a843; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; }
 #toast.show { opacity: 1; }
+/* SAVES MANAGER MODAL */
+.saves-modal { max-width: 620px; }
+.save-slot-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 340px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.save-slot-list::-webkit-scrollbar { width: 4px; }
+.save-slot-list::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); }
+.save-slot { background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.25); border-radius: 3px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.save-slot.active-slot { border-color: rgba(212,168,67,0.5); background: rgba(212,168,67,0.05); }
+.save-slot-info { flex: 1; min-width: 0; }
+.save-slot-name { font-family: 'Cinzel', serif; font-size: 13px; color: #d4a843; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.save-slot-meta { font-size: 12px; color: #7a6040; font-style: italic; }
+.save-slot-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.slot-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5px; padding: 4px 9px; border-radius: 2px; cursor: pointer; transition: all 0.15s; background: transparent; }
+.slot-btn.load { border: 1px solid rgba(140,100,40,0.4); color: #8a6030; }
+.slot-btn.load:hover { color: #d4a843; border-color: rgba(212,168,67,0.5); background: rgba(212,168,67,0.07); }
+.slot-btn.export { border: 1px solid rgba(80,100,60,0.4); color: #5a7040; }
+.slot-btn.export:hover { color: #90c060; border-color: rgba(100,160,70,0.5); }
+.slot-btn.del { border: 1px solid rgba(120,50,40,0.35); color: #5a2828; }
+.slot-btn.del:hover { color: #c04030; border-color: rgba(180,60,50,0.5); }
+.new-slot-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.new-slot-row input { flex: 1; background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 14px; padding: 8px 10px; border-radius: 2px; outline: none; }
+.new-slot-row input:focus { border-color: rgba(212,168,67,0.5); }
+.empty-slots { font-size: 13px; color: #3a2810; font-style: italic; text-align: center; padding: 20px; }
 
 @media (max-width: 960px) {
   .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; height: auto; }
@@ -383,6 +405,31 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
   </div>
 </div>
 
+<!-- SAVES MANAGER MODAL -->
+<div class="modal-overlay hidden" id="saves-overlay">
+  <div class="modal saves-modal">
+    <div class="modal-title">&#x1F4C2; SAVED CAMPAIGNS</div>
+    <div class="modal-sub">Each campaign is saved separately — load, export, or delete any slot</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Save Current Game As</div>
+      <div class="new-slot-row">
+        <input type="text" id="new-slot-name" placeholder="Campaign name e.g. The Vale of Shadows" maxlength="60">
+        <button class="begin-btn" style="flex:0;padding:10px 18px;font-size:12px;" onclick="saveToNewSlot()">&#x1F4BE; Save</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Saved Campaigns</div>
+      <div class="save-slot-list" id="save-slot-list"></div>
+    </div>
+
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeSavesManager()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- DICE ANIM -->
 <div id="roll-anim"><div class="roll-pop" id="roll-pop-val"></div></div>
 <div class="parchment-bg"></div>
@@ -525,9 +572,10 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
 
   <!-- SAVE BAR -->
   <div class="save-bar" style="grid-column:1/-1;grid-row:4;">
-    <button class="save-btn primary" onclick="exportSave()">&#x2B07; Export Save</button>
-    <label class="save-btn primary" style="cursor:pointer;display:inline-block;">&#x2B06; Import Save<input type="file" accept=".json" onchange="importSave(event)" style="display:none"></label>
-    <button class="save-btn danger" onclick="clearSave()">&#x2715; New Game</button>
+    <button class="save-btn primary" onclick="openSavesManager()">&#x1F4C2; Saves</button>
+    <button class="save-btn primary" onclick="quickSave()">&#x1F4BE; Quick Save</button>
+    <label class="save-btn primary" style="cursor:pointer;display:inline-block;">&#x2B06; Import File<input type="file" accept=".json" onchange="importSaveFile(event)" style="display:none"></label>
+    <button class="save-btn danger" onclick="newGame()">&#x2715; New Game</button>
     <div class="save-status" id="save-status">No save found</div>
   </div>
 </div>
@@ -542,7 +590,7 @@ let party = [];           // array of character objects
 let activeHeroIdx = 0;    // which hero is currently speaking / shown
 let editingHeroIdx = null;// null = new hero, number = editing existing
 let selectedPortrait = PORTRAITS[0];
-let apiKey = 'AIzaSyAYlJKa68rgcIJGvwddMTPBaYGocvLExE8'; // Replace with your key
+let apiKey = 'YOUR_GEMINI_API_KEY_HERE'; // Replace with your key
 let conversationHistory = [];
 let turnCount = 0;
 let gameStarted = false;
@@ -1211,11 +1259,30 @@ function confirmImport() {
 }
 
 // ── SAVE / LOAD ──
-const SAVE_KEY = 'chronicle_shadow_save';
+// ── MULTI-SLOT SAVE / LOAD ──
+const SAVES_PREFIX = 'cs2_save_';
+const AUTO_SLOT    = '__auto__';
+let currentSlotId  = AUTO_SLOT;
 
-function buildSaveData() {
+function allSlotIds() {
+  const ids = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(SAVES_PREFIX)) ids.push(k.slice(SAVES_PREFIX.length));
+  }
+  return ids.sort((a,b) => {
+    try {
+      const da = JSON.parse(localStorage.getItem(SAVES_PREFIX+a)).savedAt;
+      const db = JSON.parse(localStorage.getItem(SAVES_PREFIX+b)).savedAt;
+      return new Date(db) - new Date(da);
+    } catch(e){ return 0; }
+  });
+}
+
+function buildSaveData(campaignName) {
   return {
-    version: 2,
+    version: 3,
+    campaignName: campaignName || currentCampaignName(),
     savedAt: new Date().toISOString(),
     party, activeHeroIdx, turnCount, gameStarted,
     conversationHistory,
@@ -1223,50 +1290,151 @@ function buildSaveData() {
   };
 }
 
+function currentCampaignName() {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + currentSlotId);
+    if (raw) return JSON.parse(raw).campaignName || 'Unnamed Campaign';
+  } catch(e){}
+  if (party.length > 0) return party.map(h=>h.name).join(' & ') + "'s Campaign";
+  return 'Unnamed Campaign';
+}
+
+function saveToSlot(slotId, campaignName) {
+  const data = buildSaveData(campaignName);
+  try {
+    localStorage.setItem(SAVES_PREFIX + slotId, JSON.stringify(data));
+    currentSlotId = slotId;
+    updateSaveStatus();
+    return true;
+  } catch(e) {
+    showToast('Save failed — browser storage may be full.');
+    return false;
+  }
+}
+
 function autoSave() {
   if (!gameStarted) return;
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(buildSaveData()));
-    updateSaveStatus();
-  } catch(e) { console.warn('Auto-save failed:', e); }
+  saveToSlot(currentSlotId);
+}
+
+function quickSave() {
+  if (!gameStarted) { showToast('Nothing to save yet — start a game first.'); return; }
+  if (saveToSlot(currentSlotId)) showToast('Game saved!');
 }
 
 function updateSaveStatus() {
   const el = document.getElementById('save-status');
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) { el.textContent = 'No save found'; return; }
+    const raw = localStorage.getItem(SAVES_PREFIX + currentSlotId);
+    if (!raw) { el.textContent = 'Unsaved'; return; }
     const d = JSON.parse(raw);
-    const dt = new Date(d.savedAt);
-    const ago = formatAgo(dt);
-    el.textContent = `Auto-saved ${ago}`;
-  } catch(e) { el.textContent = 'Save data error'; }
+    el.textContent = (d.campaignName || 'Campaign') + ' · saved ' + formatAgo(new Date(d.savedAt));
+  } catch(e) { el.textContent = 'Save error'; }
 }
 
 function formatAgo(date) {
   const secs = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (secs < 5) return 'just now';
-  if (secs < 60) return secs + 's ago';
+  if (secs < 5)    return 'just now';
+  if (secs < 60)   return secs + 's ago';
   if (secs < 3600) return Math.floor(secs/60) + 'm ago';
-  if (secs < 86400) return Math.floor(secs/3600) + 'h ago';
+  if (secs < 86400)return Math.floor(secs/3600) + 'h ago';
   return Math.floor(secs/86400) + 'd ago';
 }
 
-function exportSave() {
-  if (!gameStarted) { showToast('Nothing to export yet — start a game first.'); return; }
-  const data = buildSaveData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const partyNames = party.map(h=>h.name.replace(/\s+/g,'-')).join('_');
-  a.href = url;
-  a.download = `chronicle-shadow_${partyNames}_turn${turnCount}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Save file exported!');
+// ── SAVES MANAGER ──
+function openSavesManager() {
+  if (gameStarted && party.length > 0) {
+    document.getElementById('new-slot-name').value = currentCampaignName();
+  } else {
+    document.getElementById('new-slot-name').value = '';
+  }
+  renderSaveSlots();
+  document.getElementById('saves-overlay').classList.remove('hidden');
 }
 
-function importSave(event) {
+function closeSavesManager() {
+  document.getElementById('saves-overlay').classList.add('hidden');
+}
+
+function saveToNewSlot() {
+  if (!gameStarted) { showToast('Nothing to save yet — start a game first.'); return; }
+  const name = document.getElementById('new-slot-name').value.trim() || currentCampaignName();
+  const slotId = 'slot_' + Date.now();
+  if (saveToSlot(slotId, name)) {
+    showToast('"' + name + '" saved!');
+    renderSaveSlots();
+  }
+}
+
+function renderSaveSlots() {
+  const list = document.getElementById('save-slot-list');
+  const ids = allSlotIds().filter(id => id !== AUTO_SLOT);
+
+  if (ids.length === 0) {
+    list.innerHTML = '<div class="empty-slots">No saved campaigns yet.<br>Save your current game above to create a slot.</div>';
+    return;
+  }
+
+  list.innerHTML = ids.map(id => {
+    let d;
+    try { d = JSON.parse(localStorage.getItem(SAVES_PREFIX + id)); } catch(e){ return ''; }
+    const names = d.party ? d.party.map(h=>h.portrait+' '+h.name).join(', ') : '—';
+    const ago = formatAgo(new Date(d.savedAt));
+    const isActive = id === currentSlotId;
+    return '<div class="save-slot' + (isActive?' active-slot':'') + '">' +
+      '<div class="save-slot-info">' +
+        '<div class="save-slot-name">' + (isActive?'&#x25CF; ':'') + (d.campaignName||'Unnamed Campaign') + '</div>' +
+        '<div class="save-slot-meta">' + names + ' &nbsp;·&nbsp; Turn ' + (d.turnCount||0) + ' &nbsp;·&nbsp; ' + ago + '</div>' +
+      '</div>' +
+      '<div class="save-slot-actions">' +
+        '<button class="slot-btn load" onclick="loadSlot(\'' + id + '\')">Load</button>' +
+        '<button class="slot-btn export" onclick="exportSlot(\'' + id + '\')">&#x2B07;</button>' +
+        '<button class="slot-btn del" onclick="deleteSlot(\'' + id + '\')">&#x2715;</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function loadSlot(slotId) {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + slotId);
+    if (!raw) { showToast('Save slot not found.'); return; }
+    const data = JSON.parse(raw);
+    if (!data.party || !data.conversationHistory) throw new Error('Invalid');
+    currentSlotId = slotId;
+    loadSaveData(data);
+    closeSavesManager();
+    showToast('Loaded "' + (data.campaignName||'Campaign') + '" — welcome back!');
+  } catch(e) { showToast('Could not load that save.'); }
+}
+
+function exportSlot(slotId) {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + slotId);
+    const data = JSON.parse(raw);
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (data.campaignName||'campaign').replace(/[^a-z0-9]/gi,'-').toLowerCase();
+    a.href = url; a.download = 'chronicle-shadow_' + safeName + '.json';
+    a.click(); URL.revokeObjectURL(url);
+    showToast('Exported!');
+  } catch(e) { showToast('Export failed.'); }
+}
+
+function deleteSlot(slotId) {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + slotId);
+    const name = raw ? (JSON.parse(raw).campaignName||'this campaign') : 'this campaign';
+    if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+    localStorage.removeItem(SAVES_PREFIX + slotId);
+    if (currentSlotId === slotId) { currentSlotId = AUTO_SLOT; updateSaveStatus(); }
+    renderSaveSlots();
+    showToast('"' + name + '" deleted.');
+  } catch(e) { showToast('Delete failed.'); }
+}
+
+function importSaveFile(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -1274,11 +1442,15 @@ function importSave(event) {
     try {
       const data = JSON.parse(e.target.result);
       if (!data.party || !data.conversationHistory) throw new Error('Invalid save file');
+      // Store as a new named slot
+      const slotId = 'slot_' + Date.now();
+      const name = data.campaignName || (data.party.map(h=>h.name).join(' & ') + "'s Campaign");
+      data.campaignName = name;
+      localStorage.setItem(SAVES_PREFIX + slotId, JSON.stringify(data));
+      currentSlotId = slotId;
       loadSaveData(data);
-      showToast('Save loaded — welcome back, ' + data.party[data.activeHeroIdx||0].name + '!');
-    } catch(err) {
-      showToast('Could not read save file — is it a Chronicle & Shadow save?');
-    }
+      showToast('Imported "' + name + '" — welcome back!');
+    } catch(err) { showToast('Could not read save file — is it a Chronicle & Shadow save?'); }
   };
   reader.readAsText(file);
   event.target.value = '';
@@ -1291,30 +1463,28 @@ function loadSaveData(data) {
   gameStarted = data.gameStarted || false;
   conversationHistory = data.conversationHistory || [];
 
-  // Restore story log
   const log = document.getElementById('story-log');
   log.innerHTML = '';
   conversationHistory.forEach(m => {
     if (m.role === 'assistant') addMessage('dm', '🎲 DUNGEON MASTER', m.content);
     else if (m.role === 'user') {
-      const content = m.content.replace(/^\[.*?\]\s*/, '');
+      const c = m.content.replace(/^\[.*?\]\s*/, '');
       const name = party[activeHeroIdx] ? party[activeHeroIdx].name.toUpperCase() : 'HERO';
-      addMessage('player', name, content);
+      addMessage('player', name, c);
     }
   });
   addMessage('system', null, '📜 Session resumed — the story continues...');
 
   if (data.eventsLog) document.getElementById('events-log').innerHTML = data.eventsLog;
   document.getElementById('turn-count').textContent = 'TURN ' + turnCount;
-
   renderPartyStrip();
   updateActiveHeroDisplay();
   updateSaveStatus();
 }
 
-function clearSave() {
-  if (!confirm('Start a new game? This will clear the current session and saved progress.')) return;
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+function newGame() {
+  if (!confirm('Start a new game? Your current session will remain in Saves if you saved it.')) return;
+  currentSlotId = AUTO_SLOT;
   party = []; activeHeroIdx = 0; turnCount = 0; gameStarted = false;
   conversationHistory = [];
   document.getElementById('story-log').innerHTML = '';
@@ -1324,8 +1494,12 @@ function clearSave() {
   updateActiveHeroDisplay();
   updateSaveStatus();
   addMessage('system', null, '⚔ New game started. Open the Party Manager to forge your heroes. ⚔');
-  showToast('New game started.');
+  openPartyManager();
 }
+
+// Legacy alias
+function exportSave() { if (gameStarted) exportSlot(currentSlotId); else showToast('Nothing to export yet.'); }
+function clearSave() { newGame(); }
 
 let toastTimer = null;
 function showToast(msg) {
@@ -1336,41 +1510,40 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-// Auto-save after every DM response
-const _origAddMsg = addMessage;
-// Patch sendAction to auto-save after each turn
 const _origSendAction = sendAction;
 sendAction = async function() {
   await _origSendAction.apply(this, arguments);
   setTimeout(autoSave, 400);
 };
 
-// ── BOOT: check for existing save ──
+// ── BOOT ──
 (function boot() {
+  // Migrate any old single-slot save
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      if (data.gameStarted && data.party && data.party.length > 0) {
-        const dt = new Date(data.savedAt);
-        const ago = formatAgo(dt);
-        const names = data.party.map(h=>h.name).join(', ');
-        const resume = confirm(`A saved game was found!
-
-Party: ${names}
-Turn: ${data.turnCount}
-Saved: ${ago}
-
-Resume this adventure?`);
-        if (resume) {
-          loadSaveData(data);
-          return;
+    const oldRaw = localStorage.getItem('chronicle_shadow_save');
+    if (oldRaw) {
+      const oldData = JSON.parse(oldRaw);
+      if (oldData.party && oldData.party.length > 0) {
+        const slotId = 'slot_migrated';
+        if (!localStorage.getItem(SAVES_PREFIX + slotId)) {
+          oldData.campaignName = oldData.party.map(h=>h.name).join(' & ') + "'s Campaign (migrated)";
+          oldData.version = 3;
+          localStorage.setItem(SAVES_PREFIX + slotId, JSON.stringify(oldData));
         }
       }
+      localStorage.removeItem('chronicle_shadow_save');
     }
-  } catch(e) {}
-  updateSaveStatus();
-  openPartyManager();
+  } catch(e){}
+
+  // Show saves manager if any slots exist, otherwise party manager
+  const ids = allSlotIds().filter(id => id !== AUTO_SLOT);
+  if (ids.length > 0) {
+    updateSaveStatus();
+    openSavesManager();
+  } else {
+    updateSaveStatus();
+    openPartyManager();
+  }
 })();
 </script>
 </body>

@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0806">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Chronicle & Shadow">
+  <meta name="application-name" content="Chronicle & Shadow">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta http-equiv="X-Frame-Options" content="ALLOWALL">
+  <style>
+    /* Ensure no white flash or background bleed */
+    * { box-sizing: border-box; }
+    html { background: #0a0806 !important; }
+    body { background: #0a0806 !important; }
+  </style>
+<title>Chronicle & Shadow — AI Dungeon Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  width: 100%;
+  min-height: 100vh;
+  font-family: 'Crimson Text', Georgia, serif;
+  background: #0a0806;
+  color: #e8d5a3;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+/* Force fill when inside an iframe */
+:root { background: #0a0806; }
+.parchment-bg { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse at 20% 50%, rgba(139,69,19,0.07) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(101,67,33,0.06) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(80,40,10,0.08) 0%, transparent 50%), #0a0806; }
+
+/* ── MODALS ── */
+.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.88); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.hidden { display: none; }
+.modal { background: #100b05; border: 1px solid rgba(212,168,67,0.35); border-radius: 4px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 32px 36px; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); }
+.modal-title { font-family: 'Cinzel', serif; font-size: 20px; color: #d4a843; letter-spacing: 2px; margin-bottom: 4px; }
+.modal-sub { font-size: 14px; color: #6a5030; font-style: italic; margin-bottom: 24px; }
+.modal-section { margin-bottom: 22px; }
+.modal-section-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; color: #8a6030; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(140,100,40,0.2); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.field-row.single { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px; color: #6a5030; text-transform: uppercase; }
+.field input, .field select, .field textarea { background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 15px; padding: 8px 10px; border-radius: 2px; outline: none; transition: border-color 0.2s; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(212,168,67,0.55); }
+.field select option { background: #1a0f05; }
+.field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+.stat-creator-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.stat-creator-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-creator-box label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; color: #6a5030; text-transform: uppercase; }
+.stat-creator-box input { background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d090; font-family: 'Cinzel', serif; font-size: 20px; font-weight: 600; width: 100%; text-align: center; padding: 8px 4px; border-radius: 2px; outline: none; }
+.stat-creator-box input:focus { border-color: rgba(212,168,67,0.55); }
+.stat-modifier { font-size: 12px; color: #8a6030; min-height: 16px; text-align: center; }
+.portrait-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.portrait-opt { width: 44px; height: 44px; border-radius: 50%; background: rgba(30,20,10,0.8); border: 2px solid rgba(120,90,40,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: all 0.15s; user-select: none; }
+.portrait-opt:hover { border-color: rgba(212,168,67,0.5); }
+.portrait-opt.selected { border-color: #d4a843; background: rgba(212,168,67,0.15); }
+.modal-btn-row { display: flex; gap: 10px; margin-top: 8px; }
+.begin-btn { font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1.5px; background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.5); color: #d4a843; padding: 12px 24px; border-radius: 3px; cursor: pointer; transition: all 0.2s; flex: 1; }
+.begin-btn:hover { background: rgba(212,168,67,0.2); border-color: #d4a843; }
+.begin-btn:active { transform: scale(0.98); }
+.cancel-btn { font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; background: transparent; border: 1px solid rgba(100,70,30,0.4); color: #6a5030; padding: 12px 20px; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.cancel-btn:hover { color: #a08050; border-color: rgba(140,100,40,0.5); }
+.error-msg { font-size: 13px; color: #c04030; font-style: italic; margin-top: 8px; min-height: 18px; text-align: center; }
+
+/* ── PARTY MANAGER MODAL ── */
+.party-modal { max-width: 560px; }
+.party-hero-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.party-hero-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.25); border-radius: 3px;
+  cursor: pointer; transition: all 0.15s;
+}
+.party-hero-row:hover { border-color: rgba(180,130,50,0.4); background: rgba(30,20,8,0.8); }
+.party-hero-row.active-hero { border-color: #d4a843; background: rgba(212,168,67,0.08); }
+.party-hero-portrait { font-size: 22px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(140,90,20,0.2); border: 1px solid rgba(180,130,50,0.3); flex-shrink: 0; }
+.party-hero-info { flex: 1; }
+.party-hero-name { font-family: 'Cinzel', serif; font-size: 13px; color: #d4a843; }
+.party-hero-desc { font-size: 12px; color: #7a6040; font-style: italic; }
+.party-hero-hp { font-size: 12px; color: #8a5a20; font-family: 'Cinzel', serif; }
+.party-hero-actions { display: flex; gap: 6px; }
+.party-action-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5px; padding: 4px 8px; border-radius: 2px; cursor: pointer; transition: all 0.15s; background: transparent; }
+.party-action-btn.edit { border: 1px solid rgba(140,100,40,0.4); color: #8a6030; }
+.party-action-btn.edit:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); }
+.party-action-btn.remove { border: 1px solid rgba(120,50,40,0.4); color: #6a3030; }
+.party-action-btn.remove:hover { color: #c04030; border-color: rgba(180,60,50,0.5); }
+.active-badge { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; color: #d4a843; background: rgba(212,168,67,0.15); border: 1px solid rgba(212,168,67,0.3); padding: 2px 7px; border-radius: 2px; }
+.add-hero-btn { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(20,13,5,0.7); border: 1px dashed rgba(140,100,40,0.4); color: #6a5030; padding: 10px; border-radius: 3px; cursor: pointer; width: 100%; transition: all 0.2s; text-align: center; }
+.add-hero-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); background: rgba(30,20,8,0.8); }
+
+/* ── APP ── */
+.app { position: relative; z-index: 1; display: grid; grid-template-columns: 270px 1fr 220px; grid-template-rows: auto 1fr auto auto; height: 100vh; height: 100dvh; max-width: 100%; margin: 0; }
+.top-bar { grid-column: 1/-1; padding: 14px 24px 12px; border-bottom: 1px solid rgba(180,130,50,0.3); display: flex; align-items: center; justify-content: space-between; background: rgba(15,10,5,0.9); flex-shrink: 0; }
+.title-area { display: flex; align-items: center; gap: 16px; }
+.title-area h1 { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: #d4a843; letter-spacing: 2px; text-shadow: 0 0 20px rgba(212,168,67,0.3); }
+.title-area .subtitle { font-size: 13px; color: #8a7050; font-style: italic; }
+.torch-icon { font-size: 22px; animation: flicker 2s infinite; }
+@keyframes flicker { 0%,100%{opacity:1;transform:scale(1)} 25%{opacity:0.85;transform:scale(0.97)} 75%{opacity:0.9;transform:scale(1.02)} }
+.top-right { display: flex; align-items: center; gap: 10px; }
+.top-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: #6a5030; border: 1px solid rgba(100,70,30,0.35); padding: 5px 12px; border-radius: 2px; cursor: pointer; background: transparent; transition: all 0.15s; white-space: nowrap; }
+.top-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); }
+.session-badge { font-family: 'Cinzel', serif; font-size: 11px; color: #8a7050; border: 1px solid rgba(138,112,80,0.4); padding: 4px 12px; border-radius: 2px; white-space: nowrap; }
+
+/* ── LEFT PANEL ── */
+.left-panel { grid-column: 1; grid-row: 2; border-right: 1px solid rgba(180,130,50,0.2); background: rgba(8,5,2,0.5); display: flex; flex-direction: column; overflow: hidden; }
+
+/* Party switcher strip */
+.party-strip { padding: 10px 12px 8px; border-bottom: 1px solid rgba(120,90,40,0.2); background: rgba(5,3,1,0.5); flex-shrink: 0; }
+.party-strip-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px; color: #4a3020; text-transform: uppercase; margin-bottom: 7px; }
+.party-strip-heroes { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.strip-hero { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(120,90,40,0.35); background: rgba(20,13,5,0.8); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.15s; position: relative; flex-shrink: 0; }
+.strip-hero:hover { border-color: rgba(180,130,50,0.6); }
+.strip-hero.active { border-color: #d4a843; background: rgba(212,168,67,0.12); }
+.strip-hero .strip-hp { position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%); background: #8b1a1a; border-radius: 2px; height: 3px; width: 24px; overflow: hidden; }
+.strip-hero .strip-hp-fill { height: 100%; background: #c0392b; transition: width 0.3s; }
+.strip-add { width: 34px; height: 34px; border-radius: 50%; border: 2px dashed rgba(100,70,30,0.35); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; color: #4a3020; transition: all 0.15s; flex-shrink: 0; }
+.strip-add:hover { border-color: rgba(180,130,50,0.5); color: #8a6030; }
+
+/* Char details */
+.char-details { flex: 1; overflow-y: auto; padding: 14px 14px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.2) transparent; }
+.char-details::-webkit-scrollbar { width: 3px; }
+.char-details::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.2); }
+.panel-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px; color: #6a5030; text-transform: uppercase; margin-bottom: 8px; }
+.char-card { background: rgba(30,20,10,0.7); border: 1px solid rgba(180,130,50,0.25); border-radius: 3px; padding: 12px; }
+.char-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.char-portrait { width: 44px; height: 44px; border-radius: 50%; background: rgba(140,90,20,0.2); border: 2px solid rgba(180,130,50,0.4); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.char-name { font-family: 'Cinzel', serif; font-size: 14px; color: #d4a843; margin-bottom: 2px; }
+.char-class { font-size: 12px; color: #a08050; font-style: italic; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+.stat-box { background: rgba(15,10,5,0.8); border: 1px solid rgba(120,90,40,0.3); border-radius: 2px; padding: 5px 4px; text-align: center; }
+.stat-label { font-size: 9px; color: #6a5030; text-transform: uppercase; letter-spacing: 1px; font-family: 'Cinzel', serif; }
+.stat-val { font-size: 17px; font-weight: 600; color: #e8d090; line-height: 1.2; }
+.stat-mod { font-size: 10px; color: #a08050; }
+.hp-bar-wrap { margin-bottom: 8px; }
+.hp-label { display: flex; justify-content: space-between; font-size: 11px; color: #8a7050; margin-bottom: 3px; }
+.hp-bar { height: 5px; background: rgba(20,10,5,0.8); border-radius: 1px; border: 1px solid rgba(120,90,40,0.3); overflow: hidden; }
+.hp-fill { height: 100%; background: linear-gradient(90deg, #8b1a1a, #c0392b); border-radius: 1px; }
+.inventory-list { list-style: none; }
+.inventory-list li { font-size: 12px; color: #a09070; padding: 3px 0; border-bottom: 1px solid rgba(100,70,30,0.12); display: flex; align-items: center; gap: 7px; }
+.inv-dot { width: 4px; height: 4px; background: #6a5030; border-radius: 50%; flex-shrink: 0; }
+.dice-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.die-btn { font-family: 'Cinzel', serif; font-size: 11px; background: rgba(30,20,10,0.8); border: 1px solid rgba(180,130,50,0.3); color: #c4a030; padding: 5px 9px; border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+.die-btn:hover { background: rgba(212,168,67,0.15); border-color: rgba(212,168,67,0.5); color: #d4a843; }
+.die-btn:active { transform: scale(0.94); }
+.roll-result { margin-top: 8px; padding: 7px 10px; background: rgba(15,10,5,0.8); border: 1px solid rgba(180,130,50,0.2); border-radius: 2px; font-family: 'Cinzel', serif; color: #d4a843; text-align: center; min-height: 36px; }
+.roll-label { font-size: 10px; color: #6a5030; letter-spacing: 1px; }
+
+/* ── MAIN AREA ── */
+.main-area { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; background: rgba(10,7,3,0.3); overflow: hidden; }
+.story-log { flex: 1; overflow-y: auto; padding: 22px 26px; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.story-log::-webkit-scrollbar { width: 4px; }
+.story-log::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); border-radius: 2px; }
+.msg { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.4s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.msg-dm .msg-header { font-family: 'Cinzel', serif; font-size: 11px; color: #8a5a20; letter-spacing: 1px; }
+.msg-dm .msg-body { font-size: 16px; line-height: 1.7; color: #e0c890; background: rgba(20,13,5,0.5); border-left: 2px solid rgba(180,120,40,0.4); padding: 12px 16px; border-radius: 0 3px 3px 0; }
+.msg-player .msg-header { font-family: 'Cinzel', serif; font-size: 11px; color: #4a7050; letter-spacing: 1px; text-align: right; }
+.msg-player .msg-body { font-size: 15px; line-height: 1.6; color: #b0c8a0; background: rgba(10,20,10,0.4); border-right: 2px solid rgba(70,120,70,0.4); padding: 10px 16px; border-radius: 3px 0 0 3px; text-align: right; }
+.msg-system .msg-body { font-size: 13px; color: #6a5030; text-align: center; font-style: italic; padding: 4px; }
+.roll-msg .msg-body { font-family: 'Cinzel', serif; font-size: 14px; color: #d4a843; text-align: center; padding: 8px; background: rgba(212,168,67,0.05); border: 1px solid rgba(212,168,67,0.15); border-radius: 3px; }
+.thinking { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
+.thinking span { width: 6px; height: 6px; background: #8a6030; border-radius: 50%; animation: bounce 1.2s infinite; }
+.thinking span:nth-child(2){animation-delay:0.2s} .thinking span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.input-area { padding: 12px 22px 16px; border-top: 1px solid rgba(180,130,50,0.2); background: rgba(8,5,2,0.7); flex-shrink: 0; }
+.speaking-as { font-family: 'Cinzel', serif; font-size: 10px; color: #6a5030; letter-spacing: 1px; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
+.speaking-as span { color: #c4a030; }
+.input-row { display: flex; gap: 10px; align-items: flex-end; }
+.action-input { flex: 1; background: rgba(20,13,5,0.8); border: 1px solid rgba(140,100,40,0.4); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 16px; padding: 10px 14px; border-radius: 3px; resize: none; min-height: 42px; max-height: 120px; line-height: 1.5; outline: none; transition: border-color 0.2s; }
+.action-input::placeholder { color: #4a3820; font-style: italic; }
+.action-input:focus { border-color: rgba(212,168,67,0.5); }
+.send-btn { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.4); color: #d4a843; padding: 10px 18px; border-radius: 3px; cursor: pointer; white-space: nowrap; transition: all 0.2s; height: 42px; }
+.send-btn:hover { background: rgba(212,168,67,0.2); border-color: rgba(212,168,67,0.6); }
+.send-btn:active { transform: scale(0.96); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.quick-actions { display: flex; gap: 7px; margin-top: 9px; flex-wrap: wrap; }
+.quick-btn { font-size: 11px; color: #6a5030; border: 1px solid rgba(100,70,30,0.3); padding: 4px 9px; border-radius: 2px; cursor: pointer; background: rgba(15,10,5,0.5); transition: all 0.15s; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
+.quick-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.4); background: rgba(30,20,8,0.7); }
+
+/* ── RIGHT PANEL ── */
+.right-panel { grid-column: 3; grid-row: 2; border-left: 1px solid rgba(180,130,50,0.2); padding: 18px 13px; background: rgba(8,5,2,0.5); display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.quest-item { padding: 9px 11px; background: rgba(20,13,5,0.6); border: 1px solid rgba(120,90,40,0.2); border-radius: 3px; margin-bottom: 7px; }
+.quest-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 3px; }
+.quest-desc { font-size: 12px; color: #7a6040; line-height: 1.4; }
+.quest-status { font-size: 10px; color: #4a6040; margin-top: 5px; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
+.location-box { padding: 11px; background: rgba(20,13,5,0.6); border: 1px solid rgba(120,90,40,0.2); border-radius: 3px; }
+.location-name { font-family: 'Cinzel', serif; font-size: 13px; color: #d4a843; margin-bottom: 5px; }
+.location-desc { font-size: 12px; color: #7a6040; line-height: 1.4; font-style: italic; }
+.condition-list { list-style: none; }
+.condition-list li { font-size: 12px; color: #a09070; padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+.cond-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.cond-green { background: #4a8a4a; } .cond-amber { background: #c4a030; }
+
+.bottom-bar { grid-column: 1/-1; grid-row: 3; padding: 7px 24px; border-top: 1px solid rgba(100,70,30,0.2); background: rgba(5,3,1,0.9); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.bottom-bar span { font-size: 11px; color: #4a3820; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
+
+#roll-anim { display: none; position: fixed; inset: 0; z-index: 300; pointer-events: none; align-items: center; justify-content: center; }
+#roll-anim .roll-pop { font-family: 'Cinzel', serif; font-size: 80px; color: #d4a843; text-shadow: 0 0 40px rgba(212,168,67,0.6); animation: rollPop 0.8s ease forwards; }
+@keyframes rollPop { 0%{opacity:0;transform:scale(0.5) rotate(-20deg)} 30%{opacity:1;transform:scale(1.2) rotate(5deg)} 60%{opacity:1;transform:scale(1) rotate(0deg)} 100%{opacity:0;transform:scale(0.8)} }
+
+/* ── SAVE/LOAD ── */
+.save-bar { display: flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(5,3,1,0.9); border-top: 1px solid rgba(80,55,20,0.25); flex-shrink: 0; flex-wrap: wrap; }
+.save-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; padding: 5px 11px; border-radius: 2px; cursor: pointer; transition: all 0.15s; background: transparent; white-space: nowrap; }
+.save-btn.primary { border: 1px solid rgba(140,100,40,0.45); color: #8a6030; }
+.save-btn.primary:hover { border-color: rgba(212,168,67,0.6); color: #d4a843; background: rgba(212,168,67,0.07); }
+.save-btn.danger { border: 1px solid rgba(120,50,40,0.4); color: #5a2828; }
+.save-btn.danger:hover { border-color: rgba(180,60,50,0.5); color: #c04030; }
+.save-status { font-family: 'Cinzel', serif; font-size: 10px; color: #3a2810; margin-left: auto; letter-spacing: 0.5px; text-align: right; }
+#toast { position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%); z-index: 400; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; padding: 10px 22px; border-radius: 3px; border: 1px solid rgba(212,168,67,0.4); background: rgba(16,11,5,0.97); color: #d4a843; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; }
+#toast.show { opacity: 1; }
+/* SAVES MANAGER MODAL */
+.saves-modal { max-width: 620px; }
+.save-slot-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 340px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.save-slot-list::-webkit-scrollbar { width: 4px; }
+.save-slot-list::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); }
+.save-slot { background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.25); border-radius: 3px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.save-slot.active-slot { border-color: rgba(212,168,67,0.5); background: rgba(212,168,67,0.05); }
+.save-slot-info { flex: 1; min-width: 0; }
+.save-slot-name { font-family: 'Cinzel', serif; font-size: 13px; color: #d4a843; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.save-slot-meta { font-size: 12px; color: #7a6040; font-style: italic; }
+.save-slot-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.slot-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5px; padding: 4px 9px; border-radius: 2px; cursor: pointer; transition: all 0.15s; background: transparent; }
+.slot-btn.load { border: 1px solid rgba(140,100,40,0.4); color: #8a6030; }
+.slot-btn.load:hover { color: #d4a843; border-color: rgba(212,168,67,0.5); background: rgba(212,168,67,0.07); }
+.slot-btn.export { border: 1px solid rgba(80,100,60,0.4); color: #5a7040; }
+.slot-btn.export:hover { color: #90c060; border-color: rgba(100,160,70,0.5); }
+.slot-btn.del { border: 1px solid rgba(120,50,40,0.35); color: #5a2828; }
+.slot-btn.del:hover { color: #c04030; border-color: rgba(180,60,50,0.5); }
+.new-slot-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.new-slot-row input { flex: 1; background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 14px; padding: 8px 10px; border-radius: 2px; outline: none; }
+.new-slot-row input:focus { border-color: rgba(212,168,67,0.5); }
+.empty-slots { font-size: 13px; color: #3a2810; font-style: italic; text-align: center; padding: 20px; }
+
+@media (max-width: 960px) {
+  /* Inside Google Sites iframe - use natural scroll layout, not fixed viewport */
+  html, body { height: auto; overflow-x: hidden; overflow-y: auto; }
+
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto auto;
+    height: auto;
+    min-height: 600px;
+  }
+
+  .top-bar { grid-column:1; grid-row:1; padding: 10px 12px 8px; }
+  .title-area h1 { font-size: 15px; letter-spacing: 1px; }
+  .title-area .subtitle { display: none; }
+  .title-area .torch-icon { font-size: 18px; }
+  .top-btn { font-size: 9px; padding: 4px 8px; }
+  .session-badge { display: none; }
+  .top-right { gap: 6px; }
+
+  /* Character panel - collapsible accordion */
+  .left-panel {
+    grid-column:1; grid-row:2;
+    border-right: none;
+    border-bottom: 1px solid rgba(180,130,50,0.2);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .left-panel.panel-open { max-height: 600px; }
+  .party-strip { padding: 8px 12px; }
+  .char-details { padding: 10px 12px; gap: 12px; }
+  .strip-hero { width: 30px; height: 30px; font-size: 14px; }
+
+  /* Main chat area */
+  .main-area { grid-column:1; grid-row:3; }
+  .story-log {
+    overflow-y: auto;
+    padding: 14px 14px;
+    min-height: 280px;
+    max-height: 50vh;
+    -webkit-overflow-scrolling: touch;
+  }
+  .input-area { padding: 8px 12px 10px; }
+  .speaking-as { font-size: 9px; margin-bottom: 5px; }
+  .action-input { font-size: 15px; min-height: 38px; }
+  .send-btn { font-size: 11px; padding: 8px 12px; height: 38px; }
+  .quick-actions { gap: 5px; margin-top: 6px; }
+  .quick-btn { font-size: 10px; padding: 3px 7px; }
+
+  /* Right panel - horizontal wrap */
+  .right-panel {
+    grid-column:1; grid-row:4;
+    border-left: none;
+    border-top: 1px solid rgba(180,130,50,0.2);
+    flex-direction: row; flex-wrap: wrap; gap: 10px; padding: 12px;
+  }
+  .right-panel > div { flex: 1; min-width: 140px; }
+
+  .bottom-bar { grid-column:1; grid-row:5; padding: 5px 12px; }
+  .bottom-bar span { font-size: 9px; }
+
+  .save-bar { grid-column:1; grid-row:6 !important; padding: 5px 10px; gap: 5px; }
+  .save-btn { font-size: 9px; padding: 4px 7px; }
+  .save-status { font-size: 9px; min-width: 0; }
+
+  /* Modals slide up from bottom */
+  .modal { padding: 18px 16px; max-height: 85vh; border-radius: 3px 3px 0 0; }
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal-title { font-size: 16px; }
+  .party-modal, .saves-modal, .import-modal { max-width: 100%; }
+
+  .stat-creator-grid { grid-template-columns: repeat(3,1fr); }
+  .field-row.three { grid-template-columns: 1fr 1fr; }
+  .field-row { grid-template-columns: 1fr; }
+  .party-strip { padding: 7px 10px 6px; }
+
+  .panel-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 140;
+  }
+  .panel-overlay.show { display: block; }
+}
+
+@media (max-width: 380px) {
+  .title-area h1 { font-size: 13px; }
+  .top-btn { font-size: 8px; padding: 3px 6px; }
+  .story-log { max-height: 40vh; }
+}
+.import-modal { max-width: 680px; }
+.import-step { display: none; }
+.import-step.active { display: block; }
+.import-textarea { width: 100%; background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 14px; padding: 12px 14px; border-radius: 2px; outline: none; resize: vertical; min-height: 200px; line-height: 1.6; transition: border-color 0.2s; }
+.import-textarea::placeholder { color: #3a2810; font-style: italic; }
+.import-textarea:focus { border-color: rgba(212,168,67,0.5); }
+.import-hero-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.import-hero-card { background: rgba(20,13,5,0.7); border: 1px solid rgba(140,100,40,0.3); border-radius: 3px; padding: 14px; }
+.import-hero-card.selected { border-color: #d4a843; background: rgba(212,168,67,0.07); }
+.import-hero-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer; }
+.import-hero-check { width: 16px; height: 16px; border: 1px solid rgba(180,130,50,0.5); border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #d4a843; flex-shrink: 0; background: rgba(10,7,3,0.8); }
+.import-hero-check.checked { background: rgba(212,168,67,0.2); border-color: #d4a843; }
+.import-hero-card-name { font-family: 'Cinzel', serif; font-size: 14px; color: #d4a843; }
+.import-hero-card-desc { font-size: 12px; color: #8a6030; font-style: italic; }
+.import-hero-stats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.import-stat-pill { font-family: 'Cinzel', serif; font-size: 10px; color: #7a6040; background: rgba(15,10,5,0.8); border: 1px solid rgba(100,70,30,0.25); padding: 2px 7px; border-radius: 2px; }
+.import-story-preview { background: rgba(20,13,5,0.6); border: 1px solid rgba(100,70,30,0.2); border-radius: 3px; padding: 12px 14px; font-size: 13px; color: #a09060; line-height: 1.6; font-style: italic; max-height: 120px; overflow-y: auto; margin-bottom: 14px; }
+.import-spinner { text-align: center; padding: 30px; }
+.import-spinner .spin-icon { font-size: 32px; animation: spin 1.5s linear infinite; display: inline-block; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.import-spinner p { font-family: 'Cinzel', serif; font-size: 12px; color: #6a5030; letter-spacing: 1px; margin-top: 12px; }
+.import-error { font-size: 13px; color: #c04030; font-style: italic; margin: 8px 0; text-align: center; min-height: 18px; }
+.add-hero-btn-alt { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(20,13,5,0.7); border: 1px dashed rgba(140,100,40,0.4); color: #6a5030; padding: 10px; border-radius: 3px; cursor: pointer; width: 100%; transition: all 0.2s; text-align: center; margin-bottom: 8px; }
+.add-hero-btn-alt:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); }
+
+/* ── CAMPAIGN CREATOR ── */
+.campaign-modal { max-width: 720px; }
+.campaign-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+.campaign-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.campaign-card {
+  background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.25);
+  border-radius: 3px; padding: 12px 14px; cursor: pointer;
+  transition: all 0.15s; position: relative;
+}
+.campaign-card:hover { border-color: rgba(180,130,50,0.45); background: rgba(30,20,8,0.8); }
+.campaign-card.selected { border-color: #d4a843; background: rgba(212,168,67,0.08); }
+.campaign-card-icon { font-size: 22px; margin-bottom: 6px; }
+.campaign-card-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 4px; letter-spacing: 0.5px; }
+.campaign-card-desc { font-size: 12px; color: #6a5030; line-height: 1.4; font-style: italic; }
+.campaign-card.selected .campaign-card-title { color: #d4a843; }
+.campaign-card.selected::after { content: '✓'; position: absolute; top: 8px; right: 10px; font-family: 'Cinzel', serif; font-size: 12px; color: #d4a843; }
+.difficulty-row { display: flex; gap: 8px; }
+.diff-btn {
+  flex: 1; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+  padding: 9px 6px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
+  background: rgba(20,13,5,0.7); text-align: center;
+}
+.diff-btn.selected { background: rgba(212,168,67,0.12); }
+.diff-easy { border: 1px solid rgba(70,140,70,0.35); color: #5a8a5a; }
+.diff-easy.selected { border-color: rgba(70,180,70,0.6); color: #70c070; }
+.diff-normal { border: 1px solid rgba(140,100,40,0.35); color: #8a7030; }
+.diff-normal.selected { border-color: #d4a843; color: #d4a843; }
+.diff-hard { border: 1px solid rgba(160,80,30,0.35); color: #a06030; }
+.diff-hard.selected { border-color: rgba(200,100,40,0.7); color: #e08040; }
+.diff-death { border: 1px solid rgba(140,30,30,0.4); color: #803030; }
+.diff-death.selected { border-color: rgba(200,40,40,0.7); color: #e04040; }
+.hook-list { display: flex; flex-direction: column; gap: 7px; }
+.hook-item {
+  background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.2);
+  border-radius: 3px; padding: 10px 14px; cursor: pointer; transition: all 0.15s;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.hook-item:hover { border-color: rgba(180,130,50,0.4); }
+.hook-item.selected { border-color: #d4a843; background: rgba(212,168,67,0.07); }
+.hook-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.hook-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 3px; }
+.hook-desc { font-size: 12px; color: #6a5030; line-height: 1.4; font-style: italic; }
+.hook-item.selected .hook-title { color: #d4a843; }
+</style>
+
+  <!-- Tell Google Sites to resize the iframe to fit content -->
+  <script>
+    // Signal to parent (Google Sites) the desired height
+    function notifyParentSize() {
+      const height = Math.max(document.body.scrollHeight, window.innerHeight, 700);
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'resize', height: height }, '*');
+      }
+    }
+    window.addEventListener('load', notifyParentSize);
+    window.addEventListener('resize', notifyParentSize);
+    // Also send on a short delay after load
+    setTimeout(notifyParentSize, 500);
+  </script>
+</head>
+<body>
+
+<!-- CHARACTER CREATOR MODAL -->
+<div class="modal-overlay hidden" id="creator-overlay">
+  <div class="modal">
+    <div class="modal-title" id="creator-title">🕯 FORGE YOUR HERO</div>
+    <div class="modal-sub" id="creator-sub">Create a new character to join the party</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Identity</div>
+      <div class="field-row">
+        <div class="field"><label>Character Name</label><input type="text" id="c-name" placeholder="e.g. Aldric Voss" maxlength="40"></div>
+        <div class="field"><label>Race</label>
+          <select id="c-race"><option>Human</option><option>Elf</option><option>Dwarf</option><option>Halfling</option><option>Half-Elf</option><option>Half-Orc</option><option>Tiefling</option><option>Gnome</option><option>Dragonborn</option><option>Aasimar</option><option>Tabaxi</option><option>Other</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Class</label>
+          <select id="c-class"><option>Barbarian</option><option>Bard</option><option>Cleric</option><option>Druid</option><option>Fighter</option><option>Monk</option><option>Paladin</option><option>Ranger</option><option>Rogue</option><option>Sorcerer</option><option>Warlock</option><option selected>Wizard</option></select>
+        </div>
+        <div class="field"><label>Level (1–20)</label><input type="number" id="c-level" value="1" min="1" max="20"></div>
+      </div>
+      <div class="field-row single">
+        <div class="field"><label>Background / Backstory (optional)</label>
+          <textarea id="c-backstory" placeholder="e.g. A former soldier seeking redemption..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Ability Scores</div>
+      <div class="stat-creator-grid" id="stat-creator-grid"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Hit Points &amp; Defences</div>
+      <div class="field-row three">
+        <div class="field"><label>Current HP</label><input type="number" id="c-hp-cur" value="10" min="1" max="999"></div>
+        <div class="field"><label>Maximum HP</label><input type="number" id="c-hp-max" value="10" min="1" max="999"></div>
+        <div class="field"><label>Armour Class</label><input type="number" id="c-ac" value="12" min="1" max="30"></div>
+      </div>
+      <div class="field-row single">
+        <div class="field"><label>Special Resources — spell slots, ki, rage, etc. (optional)</label>
+          <input type="text" id="c-resources" placeholder="e.g. Spell Slots: 4/4 (1st), 3/3 (2nd)">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Starting Inventory</div>
+      <div class="field-row single">
+        <div class="field"><label>Items — one per line</label>
+          <textarea id="c-inventory" style="min-height:90px" placeholder="Longsword&#10;Chain Mail&#10;Potion of Healing x2&#10;50 gold pieces"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Portrait</div>
+      <div class="portrait-grid" id="portrait-grid"></div>
+    </div>
+
+    <div id="creator-error" class="error-msg"></div>
+    <div class="modal-btn-row">
+      <button class="cancel-btn" id="creator-cancel-btn" onclick="closeCreator()">Cancel</button>
+      <button class="begin-btn" id="creator-save-btn" onclick="saveHero()">⚔ SAVE HERO</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT FROM CHATGPT MODAL -->
+<div class="modal-overlay hidden" id="import-overlay">
+  <div class="modal import-modal">
+    <div class="modal-title">📜 IMPORT FROM CHATGPT</div>
+    <div class="modal-sub">Paste your ChatGPT D&D session — we'll extract your characters and continue the story</div>
+
+    <!-- Step 1: Paste -->
+    <div class="import-step active" id="import-step-1">
+      <div class="modal-section">
+        <div class="modal-section-title">Paste Your Session</div>
+        <p style="font-size:13px;color:#6a5030;font-style:italic;margin-bottom:10px;">Copy the full conversation from ChatGPT and paste it below. Include as much as possible — character sheets, story, inventory, anything you have.</p>
+        <textarea class="import-textarea" id="import-paste" placeholder="Paste your ChatGPT D&D session here...
+
+Example:
+You are playing as Mira, a Level 3 Wood Elf Ranger...
+STR 12, DEX 16, CON 13, INT 10, WIS 14, CHA 8
+HP: 24/28, AC: 14
+Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
+
+[The story so far...]"></textarea>
+      </div>
+      <div id="import-step1-error" class="import-error"></div>
+      <div class="modal-btn-row">
+        <button class="cancel-btn" onclick="closeImport()">Cancel</button>
+        <button class="begin-btn" onclick="analyseSession()">🔍 ANALYSE SESSION</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Analysing spinner -->
+    <div class="import-step" id="import-step-2">
+      <div class="import-spinner">
+        <div class="spin-icon">🔮</div>
+        <p id="import-spinner-text">THE ANCIENT VOICE READS THE SCROLL...</p>
+      </div>
+    </div>
+
+    <!-- Step 3: Review extracted characters -->
+    <div class="import-step" id="import-step-3">
+      <div class="modal-section">
+        <div class="modal-section-title">Story So Far</div>
+        <div class="import-story-preview" id="import-story-preview"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Characters Found — select which to import</div>
+        <div class="import-hero-cards" id="import-hero-cards"></div>
+      </div>
+      <div id="import-step3-error" class="import-error"></div>
+      <div class="modal-btn-row">
+        <button class="cancel-btn" onclick="importGoBack()">← Back</button>
+        <button class="begin-btn" onclick="confirmImport()">⚔ IMPORT &amp; CONTINUE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARTY MANAGER MODAL -->
+<div class="modal-overlay hidden" id="party-overlay">
+  <div class="modal party-modal">
+    <div class="modal-title">⚔ THE PARTY</div>
+    <div class="modal-sub">Manage your heroes — click a name to make them active</div>
+    <div class="party-hero-list" id="party-hero-list"></div>
+    <button class="add-hero-btn" onclick="openCreatorForNew()">+ Add New Hero</button>
+    <button class="add-hero-btn-alt" onclick="openImport()">📜 Import from ChatGPT / Previous Session</button>
+    <button class="add-hero-btn-alt" style="border-color:rgba(180,130,50,0.45);color:#8a6030;" onclick="openCampaignFromParty()">🗺 Campaign Settings</button>
+    <div style="height:16px"></div>
+
+    <div class="modal-section" id="apikey-section">
+      <div class="modal-section-title">API Key</div>
+      <div class="field-row single">
+        <div class="field"><label>Google Gemini API Key — free at aistudio.google.com</label>
+          <input type="password" id="party-apikey" placeholder="AIza...">
+        </div>
+      </div>
+    </div>
+    <div id="party-error" class="error-msg"></div>
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closePartyManager()">Close</button>
+      <button class="begin-btn" onclick="savePartySettings()">✓ SAVE &amp; CONTINUE</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVES MANAGER MODAL -->
+<div class="modal-overlay hidden" id="saves-overlay">
+  <div class="modal saves-modal">
+    <div class="modal-title">&#x1F4C2; SAVED CAMPAIGNS</div>
+    <div class="modal-sub">Each campaign is saved separately — load, export, or delete any slot</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Save Current Game As</div>
+      <div class="new-slot-row">
+        <input type="text" id="new-slot-name" placeholder="Campaign name e.g. The Vale of Shadows" maxlength="60">
+        <button class="begin-btn" style="flex:0;padding:10px 18px;font-size:12px;" onclick="saveToNewSlot()">&#x1F4BE; Save</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Saved Campaigns</div>
+      <div class="save-slot-list" id="save-slot-list"></div>
+    </div>
+
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeSavesManager()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAMPAIGN CREATOR MODAL -->
+<div class="modal-overlay hidden" id="campaign-overlay">
+  <div class="modal campaign-modal">
+    <div class="modal-title">🗺 FORGE YOUR CAMPAIGN</div>
+    <div class="modal-sub">Shape the world your heroes will inhabit</div>
+
+    <!-- Campaign Name -->
+    <div class="modal-section">
+      <div class="modal-section-title">Campaign Name</div>
+      <div class="field-row single">
+        <div class="field">
+          <input type="text" id="camp-name" placeholder="e.g. The Vale of Shadows, Curse of the Iron Throne..." maxlength="60">
+        </div>
+      </div>
+    </div>
+
+    <!-- Setting -->
+    <div class="modal-section">
+      <div class="modal-section-title">Setting</div>
+      <div class="campaign-grid" id="camp-setting-grid">
+        <div class="campaign-card selected" data-group="setting" data-value="classic_fantasy" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">⚔</div>
+          <div class="campaign-card-title">Classic Fantasy</div>
+          <div class="campaign-card-desc">Dragons, dungeons, and ancient magic. The timeless realm of swords and sorcery.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="dark_gothic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🏰</div>
+          <div class="campaign-card-title">Dark Gothic</div>
+          <div class="campaign-card-desc">Crumbling castles, cursed bloodlines, and horrors lurking in the mist.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="nautical" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">⚓</div>
+          <div class="campaign-card-title">Nautical & Pirate</div>
+          <div class="campaign-card-desc">Sea monsters, treasure maps, and adventure on the open ocean.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="underdark" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🕷</div>
+          <div class="campaign-card-title">The Underdark</div>
+          <div class="campaign-card-desc">A vast subterranean world of alien wonders and terrifying creatures.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="political" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">👑</div>
+          <div class="campaign-card-title">Courts & Intrigue</div>
+          <div class="campaign-card-desc">Noble houses, assassination plots, and the games of power.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="post_apocalyptic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">💀</div>
+          <div class="campaign-card-title">Fallen World</div>
+          <div class="campaign-card-desc">A once-great civilisation in ruins. Survival in the ashes of empire.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="eastern" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🌸</div>
+          <div class="campaign-card-title">Eastern Realms</div>
+          <div class="campaign-card-desc">Samurai, spirits, and ancient traditions in a world inspired by feudal Asia.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="planar" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🌀</div>
+          <div class="campaign-card-title">Planar Adventure</div>
+          <div class="campaign-card-desc">Travelling between planes of existence — Heaven, Hell, and realms in between.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tone -->
+    <div class="modal-section">
+      <div class="modal-section-title">Tone</div>
+      <div class="campaign-grid" id="camp-tone-grid">
+        <div class="campaign-card selected" data-group="tone" data-value="epic_heroic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🌟</div>
+          <div class="campaign-card-title">Epic & Heroic</div>
+          <div class="campaign-card-desc">Grand quests, clear villains, and heroes destined for greatness.</div>
+        </div>
+        <div class="campaign-card" data-group="tone" data-value="gritty_realistic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🩸</div>
+          <div class="campaign-card-title">Gritty & Realistic</div>
+          <div class="campaign-card-desc">Morally grey, consequences matter. Victory is hard-won and costly.</div>
+        </div>
+        <div class="campaign-card" data-group="tone" data-value="mystery_horror" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🕯</div>
+          <div class="campaign-card-title">Mystery & Horror</div>
+          <div class="campaign-card-desc">Dread builds slowly. The unknown is more terrifying than what is seen.</div>
+        </div>
+        <div class="campaign-card" data-group="tone" data-value="swashbuckling" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🎭</div>
+          <div class="campaign-card-title">Swashbuckling Fun</div>
+          <div class="campaign-card-desc">Witty banter, daring escapes, and adventure with a wink and a grin.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Difficulty -->
+    <div class="modal-section">
+      <div class="modal-section-title">Difficulty</div>
+      <div class="difficulty-row">
+        <div class="diff-btn diff-easy selected" data-group="difficulty" data-value="easy" onclick="selectDifficulty(this)">
+          <div>🌿</div><div>Forgiving</div><div style="font-size:9px;color:#4a7a4a;margin-top:2px;">Story first</div>
+        </div>
+        <div class="diff-btn diff-normal" data-group="difficulty" data-value="normal" onclick="selectDifficulty(this)">
+          <div>⚔</div><div>Standard</div><div style="font-size:9px;color:#6a5030;margin-top:2px;">Balanced</div>
+        </div>
+        <div class="diff-btn diff-hard" data-group="difficulty" data-value="hard" onclick="selectDifficulty(this)">
+          <div>💀</div><div>Deadly</div><div style="font-size:9px;color:#7a4020;margin-top:2px;">Unforgiving</div>
+        </div>
+        <div class="diff-btn diff-death" data-group="difficulty" data-value="permadeath" onclick="selectDifficulty(this)">
+          <div>☠</div><div>Permadeath</div><div style="font-size:9px;color:#6a2020;margin-top:2px;">Death is final</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaign Length -->
+    <div class="modal-section">
+      <div class="modal-section-title">Campaign Length</div>
+      <div class="campaign-grid three">
+        <div class="campaign-card selected" data-group="length" data-value="oneshot" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🕯</div>
+          <div class="campaign-card-title">One-Shot</div>
+          <div class="campaign-card-desc">A single self-contained adventure. One night, one story.</div>
+        </div>
+        <div class="campaign-card" data-group="length" data-value="short" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">📖</div>
+          <div class="campaign-card-title">Short Campaign</div>
+          <div class="campaign-card-desc">A focused arc with a clear beginning, middle and end.</div>
+        </div>
+        <div class="campaign-card" data-group="length" data-value="epic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">📚</div>
+          <div class="campaign-card-title">Epic Campaign</div>
+          <div class="campaign-card-desc">A sprawling saga with many threads, growing in scope and stakes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adventure Hook -->
+    <div class="modal-section">
+      <div class="modal-section-title">Opening Hook</div>
+      <div class="hook-list" id="camp-hook-list">
+        <div class="hook-item selected" data-value="mysterious_summons" onclick="selectHook(this)">
+          <div class="hook-icon">📜</div>
+          <div><div class="hook-title">A Mysterious Summons</div><div class="hook-desc">A cryptic letter, a stranger's dying words, or a vision in the night draws the party to a place they've never been.</div></div>
+        </div>
+        <div class="hook-item" data-value="tavern_rumour" onclick="selectHook(this)">
+          <div class="hook-icon">🍺</div>
+          <div><div class="hook-title">Tavern Rumour</div><div class="hook-desc">Word of a rich reward, a missing person, or a threat no one else will face reaches the party over drinks.</div></div>
+        </div>
+        <div class="hook-item" data-value="ambushed" onclick="selectHook(this)">
+          <div class="hook-icon">⚔</div>
+          <div><div class="hook-title">Thrown Into Conflict</div><div class="hook-desc">The party is ambushed, witnesses an attack, or arrives just as something terrible begins.</div></div>
+        </div>
+        <div class="hook-item" data-value="escaped_prisoners" onclick="selectHook(this)">
+          <div class="hook-icon">⛓</div>
+          <div><div class="hook-title">Prisoners No More</div><div class="hook-desc">The party awakens imprisoned — stripped of gear, with no memory of how they got there.</div></div>
+        </div>
+        <div class="hook-item" data-value="hired" onclick="selectHook(this)">
+          <div class="hook-icon">💰</div>
+          <div><div class="hook-title">Hired for a Job</div><div class="hook-desc">A wealthy patron, a guild, or a desperate local hires the party for what seems a simple task.</div></div>
+        </div>
+        <div class="hook-item" data-value="prophecy" onclick="selectHook(this)">
+          <div class="hook-icon">🔮</div>
+          <div><div class="hook-title">A Prophecy Fulfilled</div><div class="hook-desc">Ancient words point to the party. Whether they believe it or not, others do — and they're coming.</div></div>
+        </div>
+        <div class="hook-item" data-value="custom" onclick="selectHook(this)">
+          <div class="hook-icon">✍</div>
+          <div><div class="hook-title">Write My Own</div><div class="hook-desc">I'll describe my own opening scenario below.</div></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;" id="custom-hook-wrap" class="field-row single" style="display:none;">
+        <div class="field">
+          <label>Your Opening Scenario</label>
+          <textarea id="camp-custom-hook" placeholder="Describe where the party finds themselves and what's happening as the adventure begins..." style="min-height:80px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extra Notes -->
+    <div class="modal-section">
+      <div class="modal-section-title">Additional Notes for the DM (optional)</div>
+      <div class="field-row single">
+        <div class="field">
+          <textarea id="camp-notes" placeholder="Any special requests — house rules, themes to include or avoid, specific NPCs, world details..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div id="campaign-error" class="error-msg"></div>
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeCampaignCreator()">← Back</button>
+      <button class="begin-btn" onclick="confirmCampaign()">🗺 BEGIN THE CAMPAIGN ⚔</button>
+    </div>
+  </div>
+</div>
+
+<!-- DICE ANIM -->
+<div id="roll-anim"><div class="roll-pop" id="roll-pop-val"></div></div>
+<div class="parchment-bg"></div>
+<div class="panel-overlay" id="panel-overlay" onclick="closeCharPanel()"></div>
+
+<!-- APP -->
+<div class="app">
+  <div class="top-bar">
+    <div class="title-area">
+      <span class="torch-icon">🕯</span>
+      <div>
+        <h1>CHRONICLE &amp; SHADOW</h1>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <button class="top-btn" id="char-panel-btn" onclick="toggleCharPanel()">🧙 Hero</button>
+      <button class="top-btn" onclick="openPartyManager()">⚔ Party</button>
+      <button class="top-btn" onclick="editActiveHero()">✎ Edit</button>
+      <div class="session-badge" id="session-badge">SESSION I</div>
+    </div>
+  </div>
+
+  <div class="left-panel">
+    <!-- Party strip -->
+    <div class="party-strip">
+      <div class="party-strip-label">Party</div>
+      <div class="party-strip-heroes" id="party-strip"></div>
+    </div>
+    <!-- Active hero details -->
+    <div class="char-details">
+      <div>
+        <div class="panel-label">Active Hero</div>
+        <div class="char-card">
+          <div class="char-header">
+            <div class="char-portrait" id="display-portrait">—</div>
+            <div>
+              <div class="char-name" id="display-name">No hero selected</div>
+              <div class="char-class" id="display-class">—</div>
+            </div>
+          </div>
+          <div class="stats-grid" id="display-stats"></div>
+          <div class="hp-bar-wrap">
+            <div class="hp-label"><span>Hit Points</span><span id="display-hp">— / —</span></div>
+            <div class="hp-bar"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
+          </div>
+          <div class="hp-label" style="margin-bottom:6px;"><span style="font-size:11px;color:#8a7050;">Armour Class</span><span id="display-ac" style="font-size:11px;color:#8a7050;">—</span></div>
+          <div id="display-resources" style="font-size:11px;color:#7a6040;font-style:italic;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-label">Inventory</div>
+        <div class="char-card">
+          <ul class="inventory-list" id="display-inventory">
+            <li style="color:#4a3820;font-style:italic">Add a hero to begin</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="panel-label">Dice Roller</div>
+        <div class="dice-row">
+          <button class="die-btn" onclick="rollDie(4)">d4</button>
+          <button class="die-btn" onclick="rollDie(6)">d6</button>
+          <button class="die-btn" onclick="rollDie(8)">d8</button>
+          <button class="die-btn" onclick="rollDie(10)">d10</button>
+          <button class="die-btn" onclick="rollDie(12)">d12</button>
+          <button class="die-btn" onclick="rollDie(20)">d20</button>
+          <button class="die-btn" onclick="rollDie(100)">d100</button>
+        </div>
+        <div class="roll-result" id="roll-result"><div class="roll-label">ROLL A DIE</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div class="story-log" id="story-log">
+      <div class="msg msg-system"><div class="msg-body">⚔ Open the Party Manager to forge your heroes and begin ⚔</div></div>
+    </div>
+    <div class="input-area">
+      <div class="speaking-as" id="speaking-as">SPEAKING AS: <span id="speaking-name">—</span></div>
+      <div class="input-row">
+        <textarea class="action-input" id="player-input"
+          placeholder="Describe your action, speak to an NPC, cast a spell..."
+          rows="2" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendAction()">TAKE ACTION ⚔</button>
+      </div>
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="quickAction('I investigate my surroundings carefully.')">Investigate</button>
+        <button class="quick-btn" onclick="quickAction('I ask the nearest person what they know.')">Ask NPC</button>
+        <button class="quick-btn" onclick="quickAction('I ready a weapon or spell for combat.')">Combat Stance</button>
+        <button class="quick-btn" onclick="quickAction('I attempt to move through undetected.')">Stealth</button>
+        <button class="quick-btn" onclick="quickAction('I search for traps, secrets, or hidden items.')">Search</button>
+        <button class="quick-btn" onclick="quickAction('I make camp and rest for the night.')">Rest</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div>
+      <div class="panel-label">Current Location</div>
+      <div class="location-box">
+        <div class="location-name">🏘 Millhaven, Night</div>
+        <div class="location-desc">A rain-soaked merchant town at the edge of the Greywood. The locals are superstitious and tight-lipped.</div>
+      </div>
+    </div>
+    <div>
+      <div class="panel-label">Active Quests</div>
+      <div class="quest-item">
+        <div class="quest-title">The Vale of Shadows</div>
+        <div class="quest-desc">Investigate the disappearances north of Millhaven. Reward: 500gp.</div>
+        <div class="quest-status">● IN PROGRESS</div>
+      </div>
+      <div class="quest-item">
+        <div class="quest-title">Elara's Warning</div>
+        <div class="quest-desc">The merchant seemed terrified. Find out what she truly knows.</div>
+        <div class="quest-status">○ DISCOVERED</div>
+      </div>
+    </div>
+    <div>
+      <div class="panel-label">Conditions</div>
+      <div class="char-card">
+        <ul class="condition-list">
+          <li><span class="cond-dot cond-green"></span>Healthy</li>
+          <li><span class="cond-dot cond-green"></span>Well-rested</li>
+          <li><span class="cond-dot cond-amber"></span>Slightly Hungry</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="panel-label">Recent Events</div>
+      <div style="font-size:12px;color:#5a4030;font-style:italic;line-height:1.8;" id="events-log">
+        Arrived in Millhaven at dusk.<br>Received map from merchant Elara.
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <span>CHRONICLE &amp; SHADOW · POWERED BY GEMINI</span>
+    <span id="turn-count">TURN 0</span>
+    <span>D&amp;D 5E RULES</span>
+  </div>
+
+  <!-- SAVE BAR -->
+  <div class="save-bar" style="grid-column:1/-1;grid-row:4;">
+    <button class="save-btn primary" onclick="openSavesManager()">&#x1F4C2; Saves</button>
+    <button class="save-btn primary" onclick="quickSave()">&#x1F4BE; Quick Save</button>
+    <label class="save-btn primary" style="cursor:pointer;display:inline-block;">&#x2B06; Import File<input type="file" accept=".json" onchange="importSaveFile(event)" style="display:none"></label>
+    <button class="save-btn danger" onclick="newGame()">&#x2715; New Game</button>
+    <div class="save-status" id="save-status">No save found</div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const PORTRAITS = ['🧙','🧝','🧛','🗡','🛡','🏹','🔮','⚔','🌿','🔥','💀','🐉','🦅','🐺','🌙','✨','🎭','🗺','🧟','🦸'];
+const STATS = ['STR','DEX','CON','INT','WIS','CHA'];
+const MAX_PARTY = 6;
+
+let party = [];           // array of character objects
+let activeHeroIdx = 0;    // which hero is currently speaking / shown
+let editingHeroIdx = null;// null = new hero, number = editing existing
+let selectedPortrait = PORTRAITS[0];
+let apiKey = ''; // To embed your key, replace '' with 'AIzaYOUR_KEY_HERE'
+
+// ── CLOUDFLARE WORKER CONFIG ──
+// Set your Worker URL below to hide the API key server-side.
+// Leave as '' to use direct Gemini API (key entered by user).
+// Example: 'https://chronicle-shadow.YOUR-SUBDOMAIN.workers.dev'
+const WORKER_URL = 'https://dnd-proxy.kevin-feeney-work.workers.dev';
+
+function callAI_url() {
+  if (WORKER_URL) {
+    return WORKER_URL + '?model=gemini-3.1-flash-lite';
+  }
+  return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + apiKey;
+}
+
+function callAI_headers() {
+  // No special headers needed — key is in URL for direct, Worker handles it server-side
+  return { 'Content-Type': 'application/json' };
+}
+let conversationHistory = [];
+let turnCount = 0;
+let gameStarted = false;
+
+// ── STAT HELPERS ──
+function statMod(v) { const m = Math.floor((parseInt(v)||10 - 10)/2); return (m>=0?'+':'')+m; }
+
+// ── BUILD PORTRAIT PICKER ──
+const portraitGrid = document.getElementById('portrait-grid');
+PORTRAITS.forEach(p => {
+  const el = document.createElement('div');
+  el.className = 'portrait-opt';
+  el.textContent = p;
+  el.onclick = () => {
+    document.querySelectorAll('.portrait-opt').forEach(x=>x.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPortrait = p;
+  };
+  portraitGrid.appendChild(el);
+});
+
+// ── BUILD STAT INPUTS ──
+const statGrid = document.getElementById('stat-creator-grid');
+STATS.forEach(stat => {
+  const box = document.createElement('div');
+  box.className = 'stat-creator-box';
+  box.innerHTML = `<label>${stat}</label><input type="number" id="cs-${stat}" value="10" min="1" max="30"><div class="stat-modifier" id="csm-${stat}">+0</div>`;
+  statGrid.appendChild(box);
+  box.querySelector('input').addEventListener('input', e => {
+    document.getElementById('csm-'+stat).textContent = statMod(e.target.value);
+  });
+});
+
+// ── CREATOR MODAL ──
+function openCreatorForNew() {
+  if (party.length >= MAX_PARTY) {
+    alert('Your party is full! A party may have at most 6 heroes.');
+    return;
+  }
+  editingHeroIdx = null;
+  selectedPortrait = PORTRAITS[0];
+  document.getElementById('creator-title').textContent = '🕯 FORGE YOUR HERO';
+  document.getElementById('creator-sub').textContent = 'Create a new character to join the party';
+  document.getElementById('creator-save-btn').textContent = '⚔ ADD TO PARTY';
+  document.getElementById('creator-cancel-btn').style.display = party.length > 0 ? '' : 'none';
+  // reset form
+  document.getElementById('c-name').value = '';
+  document.getElementById('c-race').value = 'Human';
+  document.getElementById('c-class').value = 'Wizard';
+  document.getElementById('c-level').value = 1;
+  document.getElementById('c-backstory').value = '';
+  document.getElementById('c-hp-cur').value = 10;
+  document.getElementById('c-hp-max').value = 10;
+  document.getElementById('c-ac').value = 12;
+  document.getElementById('c-resources').value = '';
+  document.getElementById('c-inventory').value = '';
+  STATS.forEach(s => { document.getElementById('cs-'+s).value=10; document.getElementById('csm-'+s).textContent='+0'; });
+  document.querySelectorAll('.portrait-opt').forEach((el,i) => el.classList.toggle('selected', i===0));
+  document.getElementById('creator-error').textContent = '';
+  document.getElementById('party-overlay').classList.add('hidden');
+  document.getElementById('creator-overlay').classList.remove('hidden');
+}
+
+function openCreatorForEdit(idx) {
+  editingHeroIdx = idx;
+  const h = party[idx];
+  selectedPortrait = h.portrait;
+  document.getElementById('creator-title').textContent = '✎ EDIT HERO';
+  document.getElementById('creator-sub').textContent = `Editing ${h.name}`;
+  document.getElementById('creator-save-btn').textContent = '✓ SAVE CHANGES';
+  document.getElementById('creator-cancel-btn').style.display = '';
+  document.getElementById('c-name').value = h.name;
+  document.getElementById('c-race').value = h.race;
+  document.getElementById('c-class').value = h.charClass;
+  document.getElementById('c-level').value = h.level;
+  document.getElementById('c-backstory').value = h.backstory;
+  document.getElementById('c-hp-cur').value = h.hpCur;
+  document.getElementById('c-hp-max').value = h.hpMax;
+  document.getElementById('c-ac').value = h.ac;
+  document.getElementById('c-resources').value = h.resources;
+  document.getElementById('c-inventory').value = h.inventory.join('\n');
+  STATS.forEach(s => { document.getElementById('cs-'+s).value=h.stats[s]; document.getElementById('csm-'+s).textContent=statMod(h.stats[s]); });
+  document.querySelectorAll('.portrait-opt').forEach(el => el.classList.toggle('selected', el.textContent===selectedPortrait));
+  document.getElementById('creator-error').textContent = '';
+  document.getElementById('party-overlay').classList.add('hidden');
+  document.getElementById('creator-overlay').classList.remove('hidden');
+}
+
+function closeCreator() {
+  document.getElementById('creator-overlay').classList.add('hidden');
+  if (party.length > 0) document.getElementById('party-overlay').classList.remove('hidden');
+  else openPartyManager();
+}
+
+function saveHero() {
+  const err = document.getElementById('creator-error');
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { err.textContent = 'Please give your hero a name.'; return; }
+  const stats = {};
+  STATS.forEach(s => { stats[s] = parseInt(document.getElementById('cs-'+s).value)||10; });
+  const hero = {
+    name, portrait: selectedPortrait,
+    race: document.getElementById('c-race').value,
+    charClass: document.getElementById('c-class').value,
+    level: parseInt(document.getElementById('c-level').value)||1,
+    backstory: document.getElementById('c-backstory').value.trim(),
+    stats,
+    hpCur: parseInt(document.getElementById('c-hp-cur').value)||10,
+    hpMax: parseInt(document.getElementById('c-hp-max').value)||10,
+    ac: parseInt(document.getElementById('c-ac').value)||12,
+    resources: document.getElementById('c-resources').value.trim(),
+    inventory: document.getElementById('c-inventory').value.split('\n').map(l=>l.trim()).filter(Boolean)
+  };
+  if (editingHeroIdx !== null) {
+    party[editingHeroIdx] = hero;
+    if (gameStarted) addMessage('system', null, `✎ ${hero.name} updated.`);
+  } else {
+    party.push(hero);
+    if (party.length === 1) activeHeroIdx = 0;
+  }
+  document.getElementById('creator-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+  renderPartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+}
+
+function editActiveHero() {
+  if (party.length === 0) { openPartyManager(); return; }
+  openCreatorForEdit(activeHeroIdx);
+}
+
+// ── PARTY MANAGER ──
+function openPartyManager() {
+  renderPartyManager();
+  document.getElementById('party-apikey').value = '';
+  document.getElementById('party-error').textContent = '';
+  // Hide API key field if key is already embedded in the file
+  const keyEmbedded = (WORKER_URL !== '') || (apiKey && apiKey.startsWith('AIza'));
+  const section = document.getElementById('apikey-section');
+  if (section) section.style.display = keyEmbedded ? 'none' : '';
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+function closePartyManager() {
+  document.getElementById('party-overlay').classList.add('hidden');
+}
+
+function savePartySettings() {
+  const keyInput = document.getElementById('party-apikey').value.trim();
+  const err = document.getElementById('party-error');
+  if (keyInput && !keyInput.startsWith('AIza')) { err.textContent = 'Key should start with AIza.'; return; }
+  if (keyInput) apiKey = keyInput;
+  if (!WORKER_URL && !apiKey) { err.textContent = 'Please enter your Gemini API key.'; return; }
+  if (party.length === 0) { err.textContent = 'Add at least one hero before beginning.'; return; }
+  closePartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  if (!gameStarted) startGame();
+  else addMessage('system', null, `⚔ Party updated. ${party.length} hero${party.length>1?'es':''} in the party.`);
+}
+
+function renderPartyManager() {
+  const list = document.getElementById('party-hero-list');
+  if (party.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:#4a3820;font-style:italic;text-align:center;padding:12px;">No heroes yet — add one below</div>';
+    return;
+  }
+  list.innerHTML = party.map((h,i) => `
+    <div class="party-hero-row ${i===activeHeroIdx?'active-hero':''}" onclick="setActiveHero(${i})">
+      <div class="party-hero-portrait">${h.portrait}</div>
+      <div class="party-hero-info">
+        <div class="party-hero-name">${h.name} ${i===activeHeroIdx?'<span class="active-badge">ACTIVE</span>':''}</div>
+        <div class="party-hero-desc">Lvl ${h.level} ${h.race} ${h.charClass}</div>
+        <div class="party-hero-hp">HP ${h.hpCur}/${h.hpMax} · AC ${h.ac}</div>
+      </div>
+      <div class="party-hero-actions">
+        <button class="party-action-btn edit" onclick="event.stopPropagation();openCreatorForEdit(${i})">Edit</button>
+        <button class="party-action-btn remove" onclick="event.stopPropagation();removeHero(${i})">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function setActiveHero(idx) {
+  activeHeroIdx = idx;
+  renderPartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  const h = party[idx];
+  document.getElementById('speaking-name').textContent = h.name.toUpperCase();
+  if (gameStarted) addMessage('system', null, `${h.portrait} ${h.name} is now the active hero.`);
+}
+
+function removeHero(idx) {
+  const name = party[idx].name;
+  if (!confirm(`Remove ${name} from the party?`)) return;
+  party.splice(idx, 1);
+  if (activeHeroIdx >= party.length) activeHeroIdx = Math.max(0, party.length-1);
+  renderPartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  if (gameStarted) addMessage('system', null, `${name} has left the party.`);
+}
+
+// ── PARTY STRIP ──
+function renderPartyStrip() {
+  const strip = document.getElementById('party-strip');
+  strip.innerHTML = '';
+  party.forEach((h,i) => {
+    const el = document.createElement('div');
+    el.className = 'strip-hero' + (i===activeHeroIdx?' active':'');
+    el.title = `${h.name} (${h.race} ${h.charClass} ${h.level})`;
+    el.innerHTML = `${h.portrait}<div class="strip-hp"><div class="strip-hp-fill" style="width:${Math.round((h.hpCur/h.hpMax)*100)}%"></div></div>`;
+    el.onclick = () => setActiveHero(i);
+    strip.appendChild(el);
+  });
+  if (party.length < MAX_PARTY) {
+    const add = document.createElement('div');
+    add.className = 'strip-add';
+    add.title = 'Add hero';
+    add.textContent = '+';
+    add.onclick = openCreatorForNew;
+    strip.appendChild(add);
+  }
+}
+
+// ── ACTIVE HERO DISPLAY ──
+function updateActiveHeroDisplay() {
+  if (party.length === 0) {
+    document.getElementById('display-portrait').textContent = '—';
+    document.getElementById('display-name').textContent = 'No hero selected';
+    document.getElementById('display-class').textContent = '—';
+    document.getElementById('display-hp').textContent = '— / —';
+    document.getElementById('display-ac').textContent = '—';
+    document.getElementById('display-resources').textContent = '';
+    document.getElementById('display-stats').innerHTML = '';
+    document.getElementById('display-inventory').innerHTML = '<li style="color:#4a3820;font-style:italic">Add a hero to begin</li>';
+    document.getElementById('speaking-name').textContent = '—';
+    document.getElementById('session-badge').textContent = 'SESSION I';
+    return;
+  }
+  const h = party[activeHeroIdx];
+  document.getElementById('display-portrait').textContent = h.portrait;
+  document.getElementById('display-name').textContent = h.name;
+  document.getElementById('display-class').textContent = `Lvl ${h.level} · ${h.race} ${h.charClass}`;
+  document.getElementById('display-hp').textContent = `${h.hpCur} / ${h.hpMax}`;
+  document.getElementById('hp-fill').style.width = Math.max(0,Math.min(100,(h.hpCur/h.hpMax)*100))+'%';
+  document.getElementById('display-ac').textContent = h.ac;
+  document.getElementById('display-resources').textContent = h.resources;
+  document.getElementById('display-stats').innerHTML = STATS.map(s =>
+    `<div class="stat-box"><div class="stat-label">${s}</div><div class="stat-val">${h.stats[s]}</div><div class="stat-mod">${statMod(h.stats[s])}</div></div>`
+  ).join('');
+  document.getElementById('display-inventory').innerHTML = h.inventory.length
+    ? h.inventory.map(i=>`<li><span class="inv-dot"></span>${i}</li>`).join('')
+    : '<li style="color:#4a3820;font-style:italic">No items</li>';
+  document.getElementById('speaking-name').textContent = h.name.toUpperCase();
+  document.getElementById('session-badge').textContent = `SESSION I · ${party.length > 1 ? 'THE PARTY' : h.name.toUpperCase()}`;
+}
+
+// ── GAME ──
+function buildSystemPrompt() {
+  const partyDesc = party.map((h,i) => {
+    const statLine = STATS.map(s=>`${s} ${h.stats[s]}(${statMod(h.stats[s])})`).join(' ');
+    return `  ${i===activeHeroIdx?'[ACTIVE] ':''}${h.name} — Lvl ${h.level} ${h.race} ${h.charClass} | HP ${h.hpCur}/${h.hpMax} AC ${h.ac} | ${statLine}${h.resources?' | '+h.resources:''}${h.backstory?' | Backstory: '+h.backstory:''}${h.inventory.length?' | Carries: '+h.inventory.join(', '):''}`;
+  }).join('\n');
+
+  const campName = campaign.name || 'The Vale of Shadows';
+  const settingMap = {classic_fantasy:'classic high fantasy',dark_gothic:'dark gothic horror',nautical:'nautical/pirate adventure',underdark:'subterranean Underdark',political:'political intrigue and courts',post_apocalyptic:'post-apocalyptic fallen world',eastern:'feudal eastern realms',planar:'planar/multiverse adventure'};
+  const toneMap = {epic_heroic:'epic and heroic — grand quests, noble deeds, clear stakes',gritty_realistic:'gritty and realistic — morally grey, consequences matter, survival is hard',mystery_horror:'mystery and horror — build dread slowly, the unknown is terrifying',swashbuckling:'swashbuckling and fun — witty, daring, light-hearted adventure with real stakes'};
+  const diffMap = {easy:'Forgiving difficulty — prioritise narrative fun, err on the side of player survival, monsters may not play optimally',normal:'Standard D&D 5E difficulty — balanced and fair, lethal when warranted',hard:'Deadly difficulty — be ruthless, smart enemies exploit weaknesses, bad decisions have severe consequences',permadeath:'PERMADEATH MODE — death is permanent and final, no resurrection magic works, build genuine dread in every encounter'};
+  const lengthMap = {oneshot:'This is a one-shot — self-contained, satisfying conclusion in one session',short:'This is a short campaign — focused arc, build toward a clear climax',epic:'This is an epic campaign — sprawling saga, plant seeds for long-term storylines'};
+
+  const hookContext = campaign.hook === 'custom' && campaign.customHook
+    ? `Opening scenario: ${campaign.customHook}`
+    : {mysterious_summons:'The party was drawn here by a mysterious summons — a cryptic letter, dying words, or vision',tavern_rumour:'The party heard a rumour in a tavern about reward, danger, or a missing person',ambushed:'The adventure began with sudden conflict — the party was ambushed or witnessed an attack',escaped_prisoners:'The party woke up imprisoned with no memory of how they got there',hired:'The party was hired by a patron for what seemed a simple job',prophecy:'An ancient prophecy points to the party — others believe it whether the heroes do or not'}[campaign.hook] || '';
+
+  return `You are an expert Dungeons & Dragons 5th Edition Dungeon Master called "the Ancient Voice."
+
+CAMPAIGN: ${campName}
+SETTING: ${settingMap[campaign.setting]||'classic fantasy'}
+TONE: ${toneMap[campaign.tone]||'epic and heroic'}
+DIFFICULTY: ${diffMap[campaign.difficulty]||'standard'}
+LENGTH: ${lengthMap[campaign.length]||'one-shot'}
+HOOK: ${hookContext}
+${campaign.notes?'DM NOTES: '+campaign.notes:''}
+
+THE PARTY (${party.length} hero${party.length>1?'es':''}):\n${partyDesc}
+
+The ACTIVE hero is indicated in player messages. When multiple heroes are present, give each a distinct presence and track their individual resources.
+
+YOUR ROLE:
+- Narrate in 2nd person for the active hero; reference companions by name
+- Enforce D&D 5E rules using each character's actual modifiers
+- When dice are needed, specify exactly what to roll and which character rolls it
+- Match the tone and setting above consistently throughout the campaign
+- Give NPCs distinct memorable voices; build atmosphere appropriate to the tone
+- Track story continuity; always end with a clear situation or question
+
+STYLE: 2-4 paragraphs per response. Rich sensory detail. Tone as specified above.`;
+}
+
+function startGame() {
+  gameStarted = true; turnCount = 1;
+  conversationHistory = [];
+  document.getElementById('story-log').innerHTML = '';
+  document.getElementById('turn-count').textContent = 'TURN 1';
+  const names = party.map(h=>h.name).join(', ');
+  addMessage('system', null, `⚔ ${names} enter${party.length===1?'s':''} the realm... ⚔`);
+  const active = party[activeHeroIdx];
+
+  // Check if we have an imported session to continue from
+  if (window._importedStorySummary) {
+    const summary = window._importedStorySummary;
+    const sessionText = window._importedSessionText || '';
+    window._importedStorySummary = null;
+    window._importedSessionText = null;
+
+    // Seed conversation with imported context
+    conversationHistory.push({ role: 'user', content: `[CONTEXT: The following is a D&D session that was previously played. Please continue as the Dungeon Master from where it left off.]
+
+STORY SO FAR:
+${summary}
+
+FULL SESSION (for context):
+${sessionText.substring(0, 8000)}` });
+    conversationHistory.push({ role: 'assistant', content: `Understood. I will continue as the Dungeon Master from where your previous session ended.` });
+
+    addMessage('system', null, '📜 Continuing your previous session...');
+
+    // Ask Gemini to open with a continuation
+    const continuePrompt = `${active.name} and their party have returned to continue their adventure. Briefly recap where things stand — the location, any immediate threats or situations — then ask what the party does next. Keep it to 2 paragraphs.`;
+    conversationHistory.push({ role: 'user', content: continuePrompt });
+
+    const thinkEl = addThinking();
+    const geminiContents = [
+      {role:'user', parts:[{text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.'}]},
+      {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to continue the adventure.'}]},
+      ...conversationHistory.map(m=>({role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]}))
+    ];
+    fetch(
+      callAI_url(),
+      {method:'POST', headers: callAI_headers(),
+       body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:1024, temperature:0.85}})}
+    ).then(r=>r.json()).then(data => {
+      thinkEl.remove();
+      if (data.error) {
+        addMessage('system', null, 'Your previous session has been loaded. Continue your adventure!');
+      } else {
+        const reply = data.candidates[0].content.parts[0].text;
+        conversationHistory.push({role:'assistant', content: reply});
+        addMessage('dm', '🎲 DUNGEON MASTER', reply);
+        setTimeout(autoSave, 400);
+      }
+    }).catch(() => {
+      thinkEl.remove();
+      addMessage('system', null, 'Your previous session has been loaded. Continue your adventure!');
+    });
+    return;
+  }
+
+  // Fresh game opener — ask Gemini to generate it based on campaign settings
+  const campTag = campaign.name ? campaign.name : 'a new adventure';
+  addMessage('system', null, `🗺 ${campTag} begins...`);
+
+  const openingRequest = `Begin the campaign now. Write the opening scene based on the campaign settings — setting, tone, hook, and difficulty. Introduce the world, establish the atmosphere, and end with a clear prompt for ${active.name}${party.length > 1 ? ' and the party' : ''} to act. This is the very first message the player sees — make it vivid and compelling.`;
+
+  conversationHistory.push({ role: 'user', content: openingRequest });
+
+  const thinkEl = addThinking();
+  const geminiContents = [
+    {role:'user', parts:[{text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.'}]},
+    {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to begin the campaign.'}]},
+    ...conversationHistory.map(m=>({role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]}))
+  ];
+  fetch(
+    callAI_url(),
+    {method:'POST', headers: callAI_headers(),
+     body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:1024, temperature:0.92}})}
+  ).then(r=>r.json()).then(data => {
+    thinkEl.remove();
+    if (data.error) {
+      const fallback = `The adventure begins. ${active.name}, you find yourself at the start of a new journey. What do you do?`;
+      conversationHistory.push({role:'assistant', content: fallback});
+      addMessage('dm', '🎲 DUNGEON MASTER', fallback);
+    } else {
+      const reply = data.candidates[0].content.parts[0].text;
+      conversationHistory.push({role:'assistant', content: reply});
+      addMessage('dm', '🎲 DUNGEON MASTER', reply);
+      setTimeout(autoSave, 400);
+    }
+  }).catch(() => {
+    thinkEl.remove();
+    addMessage('system', null, 'The adventure begins. Enter your first action below.');
+  });
+}
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAction();} }
+function quickAction(t) { document.getElementById('player-input').value=t; sendAction(); }
+
+async function sendAction() {
+  if (!gameStarted||party.length===0) { openPartyManager(); return; }
+  if (!WORKER_URL && !apiKey) { openPartyManager(); return; }
+  const input = document.getElementById('player-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const active = party[activeHeroIdx];
+  const btn = document.getElementById('send-btn');
+  btn.disabled=true; input.value='';
+  turnCount++;
+  document.getElementById('turn-count').textContent='TURN '+turnCount;
+  const playerMsg = party.length > 1 ? `[${active.name}] ${text}` : text;
+  addMessage('player', active.name.toUpperCase(), text);
+  conversationHistory.push({role:'user', content: playerMsg});
+  const thinkEl = addThinking();
+  try {
+    const geminiContents = [
+      {role:'user', parts:[{text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.'}]},
+      {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to guide the party with D&D 5E rules and vivid narration.'}]},
+      ...conversationHistory.map(m=>({role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]}))
+    ];
+    const response = await fetch(
+      callAI_url(),
+      {method:'POST', headers: callAI_headers(),
+       body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:1024, temperature:0.9}})}
+    );
+    const data = await response.json();
+    thinkEl.remove();
+    if (data.error) {
+      addMessage('system',null,'⚠ The Ancient Voice falters: '+data.error.message);
+      conversationHistory.pop();
+    } else {
+      const reply = data.candidates[0].content.parts[0].text;
+      conversationHistory.push({role:'assistant',content:reply});
+      addMessage('dm','🎲 DUNGEON MASTER',reply);
+      updateEventsLog(active.name+': '+text);
+    }
+  } catch(err) {
+    thinkEl.remove();
+    addMessage('system',null,'⚠ The connection to the realm falters... Check your API key.');
+    conversationHistory.pop();
+    console.error(err);
+  }
+  btn.disabled=false; input.focus();
+}
+
+function addMessage(type,header,body) {
+  const log=document.getElementById('story-log');
+  const msg=document.createElement('div');
+  msg.className='msg msg-'+type;
+  let html=header?'<div class="msg-header">'+header+'</div>':'';
+  html+='<div class="msg-body">'+body.replace(/\n/g,'<br>')+'</div>';
+  msg.innerHTML=html;
+  log.appendChild(msg);
+  log.scrollTop=log.scrollHeight;
+  return msg;
+}
+function addThinking() {
+  const log=document.getElementById('story-log');
+  const el=document.createElement('div');
+  el.className='msg msg-dm';
+  el.innerHTML='<div class="msg-header">🎲 DUNGEON MASTER</div><div class="thinking"><span></span><span></span><span></span></div>';
+  log.appendChild(el); log.scrollTop=log.scrollHeight;
+  return el;
+}
+function updateEventsLog(action) {
+  const el=document.getElementById('events-log');
+  const short=action.length>50?action.substring(0,47)+'...':action;
+  const lines=el.innerHTML.split('<br>').filter(Boolean);
+  lines.push(short);
+  el.innerHTML=lines.slice(-6).join('<br>');
+}
+function rollDie(sides) {
+  const result=Math.floor(Math.random()*sides)+1;
+  const isCrit=sides===20&&result===20, isFumble=sides===20&&result===1;
+  document.getElementById('roll-result').innerHTML=
+    `<div style="font-size:26px;font-weight:600;color:${isCrit?'#e8d843':isFumble?'#c04030':'#d4a843'}">${result}</div>
+     <div class="roll-label">d${sides}${isCrit?' — CRITICAL HIT!':isFumble?' — FUMBLE!':''}</div>`;
+  const val=document.getElementById('roll-pop-val');
+  val.textContent=result; val.style.color=isCrit?'#e8d843':isFumble?'#c04030':'#d4a843';
+  document.getElementById('roll-anim').style.display='flex';
+  setTimeout(()=>document.getElementById('roll-anim').style.display='none',850);
+  if (gameStarted && party.length>0) {
+    const who = party.length>1 ? party[activeHeroIdx].name+' — ' : '';
+    addMessage('roll',null,isCrit?`⚔ ${who}CRITICAL HIT — Natural 20!`:isFumble?`💀 ${who}FUMBLE — Natural 1!`:`🎲 ${who}Rolled d${sides}: ${result}`);
+  }
+}
+
+
+// ── CAMPAIGN CREATOR ──
+let campaign = {
+  name: '',
+  setting: 'classic_fantasy',
+  tone: 'epic_heroic',
+  difficulty: 'easy',
+  length: 'oneshot',
+  hook: 'mysterious_summons',
+  customHook: '',
+  notes: ''
+};
+
+function openCampaignFromParty() {
+  document.getElementById('party-overlay').classList.add('hidden');
+  openCampaignCreator();
+}
+
+function openCampaignCreator() {
+  document.getElementById('camp-name').value = campaign.name || '';
+  document.getElementById('camp-notes').value = campaign.notes || '';
+  document.getElementById('camp-custom-hook').value = campaign.customHook || '';
+  document.querySelectorAll('[data-group="setting"]').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.setting));
+  document.querySelectorAll('[data-group="tone"]').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.tone));
+  document.querySelectorAll('[data-group="length"]').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.length));
+  document.querySelectorAll('.diff-btn').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.difficulty));
+  document.querySelectorAll('.hook-item').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.hook));
+  toggleCustomHook(campaign.hook === 'custom');
+  document.getElementById('campaign-error').textContent = '';
+  document.getElementById('campaign-overlay').classList.remove('hidden');
+}
+
+function closeCampaignCreator() {
+  document.getElementById('campaign-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+function selectCampaignCard(el) {
+  const group = el.dataset.group;
+  document.querySelectorAll('[data-group="' + group + '"]').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  campaign[group] = el.dataset.value;
+}
+
+function selectDifficulty(el) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  campaign.difficulty = el.dataset.value;
+}
+
+function selectHook(el) {
+  document.querySelectorAll('.hook-item').forEach(h => h.classList.remove('selected'));
+  el.classList.add('selected');
+  campaign.hook = el.dataset.value;
+  toggleCustomHook(el.dataset.value === 'custom');
+}
+
+function toggleCustomHook(show) {
+  const el = document.getElementById('custom-hook-wrap');
+  if (el) el.style.display = show ? 'block' : 'none';
+}
+
+function confirmCampaign() {
+  campaign.name = document.getElementById('camp-name').value.trim();
+  campaign.customHook = document.getElementById('camp-custom-hook').value.trim();
+  campaign.notes = document.getElementById('camp-notes').value.trim();
+  if (campaign.hook === 'custom' && !campaign.customHook) {
+    document.getElementById('campaign-error').textContent = 'Please describe your opening scenario.';
+    return;
+  }
+  if (!campaign.name) {
+    const settingNames = {classic_fantasy:'Classic Fantasy',dark_gothic:'Dark Gothic',nautical:'Nautical Adventure',underdark:'Underdark',political:'Courts & Intrigue',post_apocalyptic:'Fallen World',eastern:'Eastern Realms',planar:'Planar Adventure'};
+    campaign.name = (settingNames[campaign.setting]||'New Campaign') + ' — ' + new Date().toLocaleDateString();
+  }
+  document.getElementById('campaign-overlay').classList.add('hidden');
+  // Update session badge
+  document.getElementById('session-badge').textContent = campaign.name.toUpperCase().substring(0,30);
+  showToast('Campaign set: ' + campaign.name);
+  // Return to party manager
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+// ── IMPORT FROM CHATGPT ──
+let importedCharacters = [];
+let importedStorySummary = '';
+
+function openImport() {
+  document.getElementById('party-overlay').classList.add('hidden');
+  showImportStep(1);
+  document.getElementById('import-paste').value = '';
+  document.getElementById('import-step1-error').textContent = '';
+  document.getElementById('import-step3-error').textContent = '';
+  importedCharacters = [];
+  importedStorySummary = '';
+  document.getElementById('import-overlay').classList.remove('hidden');
+}
+
+function closeImport() {
+  document.getElementById('import-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+function importGoBack() {
+  showImportStep(1);
+}
+
+function showImportStep(n) {
+  document.querySelectorAll('.import-step').forEach(el => el.classList.remove('active'));
+  document.getElementById('import-step-' + n).classList.add('active');
+}
+
+async function analyseSession() {
+  const text = document.getElementById('import-paste').value.trim();
+  const err = document.getElementById('import-step1-error');
+  if (!text || text.length < 80) { err.textContent = 'Please paste more of your session — the more detail, the better the extraction.'; return; }
+  if (!WORKER_URL && !apiKey) { err.textContent = 'Please enter your Gemini API key in the Party Manager first.'; return; }
+  err.textContent = '';
+  showImportStep(2);
+
+  const spinnerMessages = [
+    'THE ANCIENT VOICE READS THE SCROLL...',
+    'DECIPHERING CHARACTER SHEETS...',
+    'PIECING TOGETHER THE STORY...',
+    'ALMOST READY...'
+  ];
+  let spinIdx = 0;
+  const spinTimer = setInterval(() => {
+    spinIdx = (spinIdx + 1) % spinnerMessages.length;
+    const el = document.getElementById('import-spinner-text');
+    if (el) el.textContent = spinnerMessages[spinIdx];
+  }, 1800);
+
+  const PORTRAITS_MAP = {
+    'Barbarian':'🪓','Bard':'🎭','Cleric':'✨','Druid':'🌿','Fighter':'🛡',
+    'Monk':'🥋','Paladin':'⚔','Ranger':'🏹','Rogue':'🗡','Sorcerer':'🔥',
+    'Warlock':'💀','Wizard':'🔮','default':'🧙'
+  };
+
+  const prompt = `You are a D&D 5E expert assistant. Analyse the following ChatGPT D&D session transcript and extract structured data.
+
+Return ONLY valid JSON with no markdown fences, no explanation, no preamble. The JSON must have this exact structure:
+{
+  "storySummary": "2-3 sentence summary of where the story is at and what just happened",
+  "characters": [
+    {
+      "name": "Character name",
+      "race": "Race (Human/Elf/Dwarf/Halfling/Half-Elf/Half-Orc/Tiefling/Gnome/Dragonborn/Aasimar/Tabaxi/Other)",
+      "charClass": "Class (Barbarian/Bard/Cleric/Druid/Fighter/Monk/Paladin/Ranger/Rogue/Sorcerer/Warlock/Wizard)",
+      "level": 1,
+      "backstory": "Any backstory or notes about this character",
+      "stats": { "STR": 10, "DEX": 10, "CON": 10, "INT": 10, "WIS": 10, "CHA": 10 },
+      "hpCur": 10,
+      "hpMax": 10,
+      "ac": 12,
+      "resources": "Any spell slots, ki points, rage uses etc. Leave empty string if none.",
+      "inventory": ["item1", "item2"],
+      "isPlayerCharacter": true
+    }
+  ]
+}
+
+Rules:
+- Only include player characters (not NPCs or monsters)
+- If a stat is not mentioned, make a reasonable estimate based on class and level
+- If HP is not mentioned, calculate a reasonable estimate based on class and level
+- isPlayerCharacter should be true only for actual player characters the user controls
+- Include all items mentioned as belonging to each character
+- The storySummary should describe the current situation so the DM can continue from here
+
+SESSION TRANSCRIPT:
+${text.substring(0, 12000)}`;
+
+  try {
+    const response = await fetch(
+      callAI_url(),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 2048, temperature: 0.2 }
+        })
+      }
+    );
+    const data = await response.json();
+    clearInterval(spinTimer);
+
+    if (data.error) throw new Error(data.error.message);
+
+    let raw = data.candidates[0].content.parts[0].text.trim();
+    // Strip any markdown fences if present
+    raw = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    const parsed = JSON.parse(raw);
+    if (!parsed.characters || !Array.isArray(parsed.characters)) throw new Error('No characters found in session');
+
+    importedCharacters = parsed.characters
+      .filter(c => c.isPlayerCharacter !== false)
+      .map(c => ({
+        ...c,
+        portrait: PORTRAITS_MAP[c.charClass] || PORTRAITS_MAP['default'],
+        stats: {
+          STR: parseInt(c.stats?.STR)||10, DEX: parseInt(c.stats?.DEX)||10,
+          CON: parseInt(c.stats?.CON)||10, INT: parseInt(c.stats?.INT)||10,
+          WIS: parseInt(c.stats?.WIS)||10, CHA: parseInt(c.stats?.CHA)||10
+        },
+        hpCur: parseInt(c.hpCur)||10,
+        hpMax: parseInt(c.hpMax)||10,
+        ac: parseInt(c.ac)||12,
+        level: parseInt(c.level)||1,
+        inventory: Array.isArray(c.inventory) ? c.inventory : [],
+        resources: c.resources || '',
+        backstory: c.backstory || ''
+      }));
+
+    importedStorySummary = parsed.storySummary || '';
+
+    if (importedCharacters.length === 0) throw new Error('No player characters could be identified. Try pasting more of the session.');
+
+    renderImportReview();
+    showImportStep(3);
+
+  } catch(err) {
+    clearInterval(spinTimer);
+    showImportStep(1);
+    document.getElementById('import-step1-error').textContent = 'Could not extract characters: ' + err.message;
+  }
+}
+
+function renderImportReview() {
+  document.getElementById('import-story-preview').textContent = importedStorySummary || 'No story summary available.';
+
+  const container = document.getElementById('import-hero-cards');
+  container.innerHTML = '';
+
+  importedCharacters.forEach((c, i) => {
+    c._selected = true;
+    const card = document.createElement('div');
+    card.className = 'import-hero-card selected';
+    card.id = 'icard-' + i;
+
+    const statPills = ['STR','DEX','CON','INT','WIS','CHA'].map(s =>
+      '<span class="import-stat-pill">' + s + ' ' + (c.stats[s]||10) + '</span>'
+    ).join('');
+
+    card.innerHTML =
+      '<div class="import-hero-card-header" onclick="toggleImportHero(' + i + ')">' +
+        '<div class="import-hero-check checked" id="icheck-' + i + '">✓</div>' +
+        '<div class="char-portrait" style="width:36px;height:36px;font-size:18px;flex-shrink:0;">' + c.portrait + '</div>' +
+        '<div>' +
+          '<div class="import-hero-card-name">' + c.name + '</div>' +
+          '<div class="import-hero-card-desc">Lvl ' + c.level + ' ' + c.race + ' ' + c.charClass + ' · HP ' + c.hpCur + '/' + c.hpMax + ' · AC ' + c.ac + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="import-hero-stats">' + statPills + '</div>' +
+      (c.inventory.length ? '<div style="font-size:11px;color:#6a5030;margin-top:6px;font-style:italic;">Carries: ' + c.inventory.slice(0,6).join(', ') + (c.inventory.length>6?'...':'') + '</div>' : '') +
+      (c.backstory ? '<div style="font-size:11px;color:#5a4020;margin-top:4px;font-style:italic;">' + c.backstory.substring(0,120) + (c.backstory.length>120?'...':'') + '</div>' : '');
+
+    container.appendChild(card);
+  });
+}
+
+function toggleImportHero(i) {
+  importedCharacters[i]._selected = !importedCharacters[i]._selected;
+  const card = document.getElementById('icard-' + i);
+  const check = document.getElementById('icheck-' + i);
+  card.classList.toggle('selected', importedCharacters[i]._selected);
+  check.classList.toggle('checked', importedCharacters[i]._selected);
+  check.textContent = importedCharacters[i]._selected ? '✓' : '';
+}
+
+function confirmImport() {
+  const err = document.getElementById('import-step3-error');
+  const selected = importedCharacters.filter(c => c._selected);
+  if (selected.length === 0) { err.textContent = 'Please select at least one character to import.'; return; }
+  if (party.length + selected.length > MAX_PARTY) {
+    err.textContent = 'Too many heroes — party limit is ' + MAX_PARTY + '. Deselect some or remove existing heroes first.';
+    return;
+  }
+
+  // Add to party
+  selected.forEach(c => {
+    const hero = { ...c };
+    delete hero._selected;
+    party.push(hero);
+  });
+  if (party.length > 0 && !gameStarted) activeHeroIdx = 0;
+
+  document.getElementById('import-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+
+  renderPartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+
+  // Store story summary so startGame can use it
+  if (importedStorySummary) {
+    window._importedStorySummary = importedStorySummary;
+    window._importedSessionText = document.getElementById('import-paste').value.trim();
+  }
+
+  showToast(selected.length + ' hero' + (selected.length>1?'es':'') + ' imported! Save your key and begin.');
+}
+
+// ── SAVE / LOAD ──
+// ── MULTI-SLOT SAVE / LOAD ──
+const SAVES_PREFIX = 'cs2_save_';
+const AUTO_SLOT    = '__auto__';
+let currentSlotId  = AUTO_SLOT;
+
+function allSlotIds() {
+  const ids = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(SAVES_PREFIX)) ids.push(k.slice(SAVES_PREFIX.length));
+  }
+  return ids.sort((a,b) => {
+    try {
+      const da = JSON.parse(localStorage.getItem(SAVES_PREFIX+a)).savedAt;
+      const db = JSON.parse(localStorage.getItem(SAVES_PREFIX+b)).savedAt;
+      return new Date(db) - new Date(da);
+    } catch(e){ return 0; }
+  });
+}
+
+function buildSaveData(campaignName) {
+  return {
+    version: 3,
+    campaignName: campaignName || campaign.name || currentCampaignName(),
+    savedAt: new Date().toISOString(),
+    party, activeHeroIdx, turnCount, gameStarted,
+    conversationHistory, campaign,
+    eventsLog: document.getElementById('events-log').innerHTML
+  };
+}
+
+function currentCampaignName() {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + currentSlotId);
+    if (raw) return JSON.parse(raw).campaignName || 'Unnamed Campaign';
+  } catch(e){}
+  if (party.length > 0) return party.map(h=>h.name).join(' & ') + "'s Campaign";
+  return 'Unnamed Campaign';
+}
+
+function saveToSlot(slotId, campaignName) {
+  const data = buildSaveData(campaignName);
+  try {
+    localStorage.setItem(SAVES_PREFIX + slotId, JSON.stringify(data));
+    currentSlotId = slotId;
+    updateSaveStatus();
+    return true;
+  } catch(e) {
+    showToast('Save failed — browser storage may be full.');
+    return false;
+  }
+}
+
+function autoSave() {
+  if (!gameStarted) return;
+  saveToSlot(currentSlotId);
+}
+
+function quickSave() {
+  if (!gameStarted) { showToast('Nothing to save yet — start a game first.'); return; }
+  if (saveToSlot(currentSlotId)) showToast('Game saved!');
+}
+
+function updateSaveStatus() {
+  const el = document.getElementById('save-status');
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + currentSlotId);
+    if (!raw) { el.textContent = 'Unsaved'; return; }
+    const d = JSON.parse(raw);
+    el.textContent = (d.campaignName || 'Campaign') + ' · saved ' + formatAgo(new Date(d.savedAt));
+  } catch(e) { el.textContent = 'Save error'; }
+}
+
+function formatAgo(date) {
+  const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (secs < 5)    return 'just now';
+  if (secs < 60)   return secs + 's ago';
+  if (secs < 3600) return Math.floor(secs/60) + 'm ago';
+  if (secs < 86400)return Math.floor(secs/3600) + 'h ago';
+  return Math.floor(secs/86400) + 'd ago';
+}
+
+// ── SAVES MANAGER ──
+function openSavesManager() {
+  if (gameStarted && party.length > 0) {
+    document.getElementById('new-slot-name').value = currentCampaignName();
+  } else {
+    document.getElementById('new-slot-name').value = '';
+  }
+  renderSaveSlots();
+  document.getElementById('saves-overlay').classList.remove('hidden');
+}
+
+function closeSavesManager() {
+  document.getElementById('saves-overlay').classList.add('hidden');
+}
+
+function saveToNewSlot() {
+  if (!gameStarted) { showToast('Nothing to save yet — start a game first.'); return; }
+  const name = document.getElementById('new-slot-name').value.trim() || currentCampaignName();
+  const slotId = 'slot_' + Date.now();
+  if (saveToSlot(slotId, name)) {
+    showToast('"' + name + '" saved!');
+    renderSaveSlots();
+  }
+}
+
+function renderSaveSlots() {
+  const list = document.getElementById('save-slot-list');
+  const ids = allSlotIds().filter(id => id !== AUTO_SLOT);
+
+  if (ids.length === 0) {
+    list.innerHTML = '<div class="empty-slots">No saved campaigns yet.<br>Save your current game above to create a slot.</div>';
+    return;
+  }
+
+  list.innerHTML = ids.map(id => {
+    let d;
+    try { d = JSON.parse(localStorage.getItem(SAVES_PREFIX + id)); } catch(e){ return ''; }
+    const names = d.party ? d.party.map(h=>h.portrait+' '+h.name).join(', ') : '—';
+    const ago = formatAgo(new Date(d.savedAt));
+    const isActive = id === currentSlotId;
+    return '<div class="save-slot' + (isActive?' active-slot':'') + '">' +
+      '<div class="save-slot-info">' +
+        '<div class="save-slot-name">' + (isActive?'&#x25CF; ':'') + (d.campaignName||'Unnamed Campaign') + '</div>' +
+        '<div class="save-slot-meta">' + names + ' &nbsp;·&nbsp; Turn ' + (d.turnCount||0) + ' &nbsp;·&nbsp; ' + ago + '</div>' +
+      '</div>' +
+      '<div class="save-slot-actions">' +
+        '<button class="slot-btn load" onclick="loadSlot(\'' + id + '\')">Load</button>' +
+        '<button class="slot-btn export" onclick="exportSlot(\'' + id + '\')">&#x2B07;</button>' +
+        '<button class="slot-btn del" onclick="deleteSlot(\'' + id + '\')">&#x2715;</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function loadSlot(slotId) {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + slotId);
+    if (!raw) { showToast('Save slot not found.'); return; }
+    const data = JSON.parse(raw);
+    if (!data.party || !data.conversationHistory) throw new Error('Invalid');
+    currentSlotId = slotId;
+    loadSaveData(data);
+    closeSavesManager();
+    showToast('Loaded "' + (data.campaignName||'Campaign') + '" — welcome back!');
+  } catch(e) { showToast('Could not load that save.'); }
+}
+
+function exportSlot(slotId) {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + slotId);
+    const data = JSON.parse(raw);
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (data.campaignName||'campaign').replace(/[^a-z0-9]/gi,'-').toLowerCase();
+    a.href = url; a.download = 'chronicle-shadow_' + safeName + '.json';
+    a.click(); URL.revokeObjectURL(url);
+    showToast('Exported!');
+  } catch(e) { showToast('Export failed.'); }
+}
+
+function deleteSlot(slotId) {
+  try {
+    const raw = localStorage.getItem(SAVES_PREFIX + slotId);
+    const name = raw ? (JSON.parse(raw).campaignName||'this campaign') : 'this campaign';
+    if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+    localStorage.removeItem(SAVES_PREFIX + slotId);
+    if (currentSlotId === slotId) { currentSlotId = AUTO_SLOT; updateSaveStatus(); }
+    renderSaveSlots();
+    showToast('"' + name + '" deleted.');
+  } catch(e) { showToast('Delete failed.'); }
+}
+
+function importSaveFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.party || !data.conversationHistory) throw new Error('Invalid save file');
+      // Store as a new named slot
+      const slotId = 'slot_' + Date.now();
+      const name = data.campaignName || (data.party.map(h=>h.name).join(' & ') + "'s Campaign");
+      data.campaignName = name;
+      localStorage.setItem(SAVES_PREFIX + slotId, JSON.stringify(data));
+      currentSlotId = slotId;
+      loadSaveData(data);
+      showToast('Imported "' + name + '" — welcome back!');
+    } catch(err) { showToast('Could not read save file — is it a Chronicle & Shadow save?'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function loadSaveData(data) {
+  party = data.party || [];
+  activeHeroIdx = data.activeHeroIdx || 0;
+  turnCount = data.turnCount || 0;
+  gameStarted = data.gameStarted || false;
+  conversationHistory = data.conversationHistory || [];
+  if (data.campaign) campaign = data.campaign;
+
+  const log = document.getElementById('story-log');
+  log.innerHTML = '';
+  conversationHistory.forEach(m => {
+    if (m.role === 'assistant') addMessage('dm', '🎲 DUNGEON MASTER', m.content);
+    else if (m.role === 'user') {
+      const c = m.content.replace(/^\[.*?\]\s*/, '');
+      const name = party[activeHeroIdx] ? party[activeHeroIdx].name.toUpperCase() : 'HERO';
+      addMessage('player', name, c);
+    }
+  });
+  addMessage('system', null, '📜 Session resumed — the story continues...');
+
+  if (data.eventsLog) document.getElementById('events-log').innerHTML = data.eventsLog;
+  document.getElementById('turn-count').textContent = 'TURN ' + turnCount;
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  updateSaveStatus();
+}
+
+function newGame() {
+  if (!confirm('Start a new game? Your current session will remain in Saves if you saved it.')) return;
+  currentSlotId = AUTO_SLOT;
+  party = []; activeHeroIdx = 0; turnCount = 0; gameStarted = false;
+  conversationHistory = [];
+  document.getElementById('story-log').innerHTML = '';
+  document.getElementById('events-log').innerHTML = 'A new adventure awaits...';
+  document.getElementById('turn-count').textContent = 'TURN 0';
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  updateSaveStatus();
+  addMessage('system', null, '⚔ New game started. Open the Party Manager to forge your heroes. ⚔');
+  openPartyManager();
+}
+
+// Legacy alias
+function exportSave() { if (gameStarted) exportSlot(currentSlotId); else showToast('Nothing to export yet.'); }
+function clearSave() { newGame(); }
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+const _origSendAction = sendAction;
+sendAction = async function() {
+  await _origSendAction.apply(this, arguments);
+  setTimeout(autoSave, 400);
+};
+
+
+// ── MOBILE CHAR PANEL ──
+function toggleCharPanel() {
+  const panel = document.querySelector('.left-panel');
+  const overlay = document.getElementById('panel-overlay');
+  if (panel.classList.contains('panel-open')) {
+    panel.classList.remove('panel-open');
+    overlay.classList.remove('show');
+  } else {
+    panel.classList.add('panel-open');
+    overlay.classList.add('show');
+  }
+}
+function closeCharPanel() {
+  document.querySelector('.left-panel').classList.remove('panel-open');
+  document.getElementById('panel-overlay').classList.remove('show');
+}
+
+// ── BOOT ──
+(function boot() {
+  // Migrate any old single-slot save
+  try {
+    const oldRaw = localStorage.getItem('chronicle_shadow_save');
+    if (oldRaw) {
+      const oldData = JSON.parse(oldRaw);
+      if (oldData.party && oldData.party.length > 0) {
+        const slotId = 'slot_migrated';
+        if (!localStorage.getItem(SAVES_PREFIX + slotId)) {
+          oldData.campaignName = oldData.party.map(h=>h.name).join(' & ') + "'s Campaign (migrated)";
+          oldData.version = 3;
+          localStorage.setItem(SAVES_PREFIX + slotId, JSON.stringify(oldData));
+        }
+      }
+      localStorage.removeItem('chronicle_shadow_save');
+    }
+  } catch(e){}
+
+  // Show saves manager if any slots exist, otherwise party manager
+  const ids = allSlotIds().filter(id => id !== AUTO_SLOT);
+  if (ids.length > 0) {
+    updateSaveStatus();
+    openSavesManager();
+  } else {
+    updateSaveStatus();
+    openPartyManager();
+  }
+})();
+</script>
+
+  
+  <!-- PWA Install Banner -->
+  <div id="install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;
+    background:rgba(16,11,5,0.97);border-top:1px solid rgba(212,168,67,0.4);
+    padding:12px 16px;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:#d4a843;letter-spacing:1px;">🕯 INSTALL CHRONICLE & SHADOW</div>
+      <div style="font-size:12px;color:#6a5030;font-style:italic;margin-top:2px;">Add to your home screen for the full app experience</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="installApp()" style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;
+        background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.5);color:#d4a843;
+        padding:8px 16px;border-radius:3px;cursor:pointer;">Install</button>
+      <button onclick="dismissInstall()" style="font-family:'Cinzel',serif;font-size:11px;
+        background:transparent;border:1px solid rgba(100,70,30,0.4);color:#6a5030;
+        padding:8px 12px;border-radius:3px;cursor:pointer;">✕</button>
+    </div>
+  </div>
+
+<script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('SW registered'))
+          .catch(err => console.log('SW failed:', err));
+      });
+    }
+
+    // Show install prompt for Android
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show install button after a short delay
+      setTimeout(() => {
+        if (deferredPrompt) showInstallBanner();
+      }, 3000);
+    });
+
+    function showInstallBanner() {
+      const banner = document.getElementById('install-banner');
+      if (banner) banner.style.display = 'flex';
+    }
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+          deferredPrompt = null;
+          document.getElementById('install-banner').style.display = 'none';
+        });
+      }
+    }
+
+    function dismissInstall() {
+      document.getElementById('install-banner').style.display = 'none';
+      deferredPrompt = null;
+    }
+  </script>
+</body>
+</html>

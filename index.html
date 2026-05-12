@@ -328,6 +328,50 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
 .import-error { font-size: 13px; color: #c04030; font-style: italic; margin: 8px 0; text-align: center; min-height: 18px; }
 .add-hero-btn-alt { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(20,13,5,0.7); border: 1px dashed rgba(140,100,40,0.4); color: #6a5030; padding: 10px; border-radius: 3px; cursor: pointer; width: 100%; transition: all 0.2s; text-align: center; margin-bottom: 8px; }
 .add-hero-btn-alt:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); }
+
+/* ── CAMPAIGN CREATOR ── */
+.campaign-modal { max-width: 720px; }
+.campaign-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+.campaign-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.campaign-card {
+  background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.25);
+  border-radius: 3px; padding: 12px 14px; cursor: pointer;
+  transition: all 0.15s; position: relative;
+}
+.campaign-card:hover { border-color: rgba(180,130,50,0.45); background: rgba(30,20,8,0.8); }
+.campaign-card.selected { border-color: #d4a843; background: rgba(212,168,67,0.08); }
+.campaign-card-icon { font-size: 22px; margin-bottom: 6px; }
+.campaign-card-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 4px; letter-spacing: 0.5px; }
+.campaign-card-desc { font-size: 12px; color: #6a5030; line-height: 1.4; font-style: italic; }
+.campaign-card.selected .campaign-card-title { color: #d4a843; }
+.campaign-card.selected::after { content: '✓'; position: absolute; top: 8px; right: 10px; font-family: 'Cinzel', serif; font-size: 12px; color: #d4a843; }
+.difficulty-row { display: flex; gap: 8px; }
+.diff-btn {
+  flex: 1; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+  padding: 9px 6px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
+  background: rgba(20,13,5,0.7); text-align: center;
+}
+.diff-btn.selected { background: rgba(212,168,67,0.12); }
+.diff-easy { border: 1px solid rgba(70,140,70,0.35); color: #5a8a5a; }
+.diff-easy.selected { border-color: rgba(70,180,70,0.6); color: #70c070; }
+.diff-normal { border: 1px solid rgba(140,100,40,0.35); color: #8a7030; }
+.diff-normal.selected { border-color: #d4a843; color: #d4a843; }
+.diff-hard { border: 1px solid rgba(160,80,30,0.35); color: #a06030; }
+.diff-hard.selected { border-color: rgba(200,100,40,0.7); color: #e08040; }
+.diff-death { border: 1px solid rgba(140,30,30,0.4); color: #803030; }
+.diff-death.selected { border-color: rgba(200,40,40,0.7); color: #e04040; }
+.hook-list { display: flex; flex-direction: column; gap: 7px; }
+.hook-item {
+  background: rgba(20,13,5,0.7); border: 1px solid rgba(120,90,40,0.2);
+  border-radius: 3px; padding: 10px 14px; cursor: pointer; transition: all 0.15s;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.hook-item:hover { border-color: rgba(180,130,50,0.4); }
+.hook-item.selected { border-color: #d4a843; background: rgba(212,168,67,0.07); }
+.hook-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.hook-title { font-family: 'Cinzel', serif; font-size: 12px; color: #c4a030; margin-bottom: 3px; }
+.hook-desc { font-size: 12px; color: #6a5030; line-height: 1.4; font-style: italic; }
+.hook-item.selected .hook-title { color: #d4a843; }
 </style>
 </head>
 <body>
@@ -463,6 +507,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     <div class="party-hero-list" id="party-hero-list"></div>
     <button class="add-hero-btn" onclick="openCreatorForNew()">+ Add New Hero</button>
     <button class="add-hero-btn-alt" onclick="openImport()">📜 Import from ChatGPT / Previous Session</button>
+    <button class="add-hero-btn-alt" style="border-color:rgba(180,130,50,0.45);color:#8a6030;" onclick="openCampaignFromParty()">🗺 Campaign Settings</button>
     <div style="height:16px"></div>
 
     <div class="modal-section" id="apikey-section">
@@ -502,6 +547,196 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
 
     <div class="modal-btn-row">
       <button class="cancel-btn" onclick="closeSavesManager()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAMPAIGN CREATOR MODAL -->
+<div class="modal-overlay hidden" id="campaign-overlay">
+  <div class="modal campaign-modal">
+    <div class="modal-title">🗺 FORGE YOUR CAMPAIGN</div>
+    <div class="modal-sub">Shape the world your heroes will inhabit</div>
+
+    <!-- Campaign Name -->
+    <div class="modal-section">
+      <div class="modal-section-title">Campaign Name</div>
+      <div class="field-row single">
+        <div class="field">
+          <input type="text" id="camp-name" placeholder="e.g. The Vale of Shadows, Curse of the Iron Throne..." maxlength="60">
+        </div>
+      </div>
+    </div>
+
+    <!-- Setting -->
+    <div class="modal-section">
+      <div class="modal-section-title">Setting</div>
+      <div class="campaign-grid" id="camp-setting-grid">
+        <div class="campaign-card selected" data-group="setting" data-value="classic_fantasy" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">⚔</div>
+          <div class="campaign-card-title">Classic Fantasy</div>
+          <div class="campaign-card-desc">Dragons, dungeons, and ancient magic. The timeless realm of swords and sorcery.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="dark_gothic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🏰</div>
+          <div class="campaign-card-title">Dark Gothic</div>
+          <div class="campaign-card-desc">Crumbling castles, cursed bloodlines, and horrors lurking in the mist.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="nautical" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">⚓</div>
+          <div class="campaign-card-title">Nautical & Pirate</div>
+          <div class="campaign-card-desc">Sea monsters, treasure maps, and adventure on the open ocean.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="underdark" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🕷</div>
+          <div class="campaign-card-title">The Underdark</div>
+          <div class="campaign-card-desc">A vast subterranean world of alien wonders and terrifying creatures.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="political" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">👑</div>
+          <div class="campaign-card-title">Courts & Intrigue</div>
+          <div class="campaign-card-desc">Noble houses, assassination plots, and the games of power.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="post_apocalyptic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">💀</div>
+          <div class="campaign-card-title">Fallen World</div>
+          <div class="campaign-card-desc">A once-great civilisation in ruins. Survival in the ashes of empire.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="eastern" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🌸</div>
+          <div class="campaign-card-title">Eastern Realms</div>
+          <div class="campaign-card-desc">Samurai, spirits, and ancient traditions in a world inspired by feudal Asia.</div>
+        </div>
+        <div class="campaign-card" data-group="setting" data-value="planar" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🌀</div>
+          <div class="campaign-card-title">Planar Adventure</div>
+          <div class="campaign-card-desc">Travelling between planes of existence — Heaven, Hell, and realms in between.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tone -->
+    <div class="modal-section">
+      <div class="modal-section-title">Tone</div>
+      <div class="campaign-grid" id="camp-tone-grid">
+        <div class="campaign-card selected" data-group="tone" data-value="epic_heroic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🌟</div>
+          <div class="campaign-card-title">Epic & Heroic</div>
+          <div class="campaign-card-desc">Grand quests, clear villains, and heroes destined for greatness.</div>
+        </div>
+        <div class="campaign-card" data-group="tone" data-value="gritty_realistic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🩸</div>
+          <div class="campaign-card-title">Gritty & Realistic</div>
+          <div class="campaign-card-desc">Morally grey, consequences matter. Victory is hard-won and costly.</div>
+        </div>
+        <div class="campaign-card" data-group="tone" data-value="mystery_horror" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🕯</div>
+          <div class="campaign-card-title">Mystery & Horror</div>
+          <div class="campaign-card-desc">Dread builds slowly. The unknown is more terrifying than what is seen.</div>
+        </div>
+        <div class="campaign-card" data-group="tone" data-value="swashbuckling" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🎭</div>
+          <div class="campaign-card-title">Swashbuckling Fun</div>
+          <div class="campaign-card-desc">Witty banter, daring escapes, and adventure with a wink and a grin.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Difficulty -->
+    <div class="modal-section">
+      <div class="modal-section-title">Difficulty</div>
+      <div class="difficulty-row">
+        <div class="diff-btn diff-easy selected" data-group="difficulty" data-value="easy" onclick="selectDifficulty(this)">
+          <div>🌿</div><div>Forgiving</div><div style="font-size:9px;color:#4a7a4a;margin-top:2px;">Story first</div>
+        </div>
+        <div class="diff-btn diff-normal" data-group="difficulty" data-value="normal" onclick="selectDifficulty(this)">
+          <div>⚔</div><div>Standard</div><div style="font-size:9px;color:#6a5030;margin-top:2px;">Balanced</div>
+        </div>
+        <div class="diff-btn diff-hard" data-group="difficulty" data-value="hard" onclick="selectDifficulty(this)">
+          <div>💀</div><div>Deadly</div><div style="font-size:9px;color:#7a4020;margin-top:2px;">Unforgiving</div>
+        </div>
+        <div class="diff-btn diff-death" data-group="difficulty" data-value="permadeath" onclick="selectDifficulty(this)">
+          <div>☠</div><div>Permadeath</div><div style="font-size:9px;color:#6a2020;margin-top:2px;">Death is final</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaign Length -->
+    <div class="modal-section">
+      <div class="modal-section-title">Campaign Length</div>
+      <div class="campaign-grid three">
+        <div class="campaign-card selected" data-group="length" data-value="oneshot" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">🕯</div>
+          <div class="campaign-card-title">One-Shot</div>
+          <div class="campaign-card-desc">A single self-contained adventure. One night, one story.</div>
+        </div>
+        <div class="campaign-card" data-group="length" data-value="short" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">📖</div>
+          <div class="campaign-card-title">Short Campaign</div>
+          <div class="campaign-card-desc">A focused arc with a clear beginning, middle and end.</div>
+        </div>
+        <div class="campaign-card" data-group="length" data-value="epic" onclick="selectCampaignCard(this)">
+          <div class="campaign-card-icon">📚</div>
+          <div class="campaign-card-title">Epic Campaign</div>
+          <div class="campaign-card-desc">A sprawling saga with many threads, growing in scope and stakes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adventure Hook -->
+    <div class="modal-section">
+      <div class="modal-section-title">Opening Hook</div>
+      <div class="hook-list" id="camp-hook-list">
+        <div class="hook-item selected" data-value="mysterious_summons" onclick="selectHook(this)">
+          <div class="hook-icon">📜</div>
+          <div><div class="hook-title">A Mysterious Summons</div><div class="hook-desc">A cryptic letter, a stranger's dying words, or a vision in the night draws the party to a place they've never been.</div></div>
+        </div>
+        <div class="hook-item" data-value="tavern_rumour" onclick="selectHook(this)">
+          <div class="hook-icon">🍺</div>
+          <div><div class="hook-title">Tavern Rumour</div><div class="hook-desc">Word of a rich reward, a missing person, or a threat no one else will face reaches the party over drinks.</div></div>
+        </div>
+        <div class="hook-item" data-value="ambushed" onclick="selectHook(this)">
+          <div class="hook-icon">⚔</div>
+          <div><div class="hook-title">Thrown Into Conflict</div><div class="hook-desc">The party is ambushed, witnesses an attack, or arrives just as something terrible begins.</div></div>
+        </div>
+        <div class="hook-item" data-value="escaped_prisoners" onclick="selectHook(this)">
+          <div class="hook-icon">⛓</div>
+          <div><div class="hook-title">Prisoners No More</div><div class="hook-desc">The party awakens imprisoned — stripped of gear, with no memory of how they got there.</div></div>
+        </div>
+        <div class="hook-item" data-value="hired" onclick="selectHook(this)">
+          <div class="hook-icon">💰</div>
+          <div><div class="hook-title">Hired for a Job</div><div class="hook-desc">A wealthy patron, a guild, or a desperate local hires the party for what seems a simple task.</div></div>
+        </div>
+        <div class="hook-item" data-value="prophecy" onclick="selectHook(this)">
+          <div class="hook-icon">🔮</div>
+          <div><div class="hook-title">A Prophecy Fulfilled</div><div class="hook-desc">Ancient words point to the party. Whether they believe it or not, others do — and they're coming.</div></div>
+        </div>
+        <div class="hook-item" data-value="custom" onclick="selectHook(this)">
+          <div class="hook-icon">✍</div>
+          <div><div class="hook-title">Write My Own</div><div class="hook-desc">I'll describe my own opening scenario below.</div></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;" id="custom-hook-wrap" class="field-row single" style="display:none;">
+        <div class="field">
+          <label>Your Opening Scenario</label>
+          <textarea id="camp-custom-hook" placeholder="Describe where the party finds themselves and what's happening as the adventure begins..." style="min-height:80px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extra Notes -->
+    <div class="modal-section">
+      <div class="modal-section-title">Additional Notes for the DM (optional)</div>
+      <div class="field-row single">
+        <div class="field">
+          <textarea id="camp-notes" placeholder="Any special requests — house rules, themes to include or avoid, specific NPCs, world details..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div id="campaign-error" class="error-msg"></div>
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeCampaignCreator()">← Back</button>
+      <button class="begin-btn" onclick="confirmCampaign()">🗺 BEGIN THE CAMPAIGN ⚔</button>
     </div>
   </div>
 </div>
@@ -668,7 +903,7 @@ let party = [];           // array of character objects
 let activeHeroIdx = 0;    // which hero is currently speaking / shown
 let editingHeroIdx = null;// null = new hero, number = editing existing
 let selectedPortrait = PORTRAITS[0];
-let apiKey = 'AIzaSyDPfM5jrhyuJMlGTwR_MTEU2fjDuo2QNGE'; // To embed your key, replace '' with 'AIzaYOUR_KEY_HERE'
+let apiKey = 'AIzaSyCeTinr8j9dhx4mDtDqwF0CnSRHaCJd8vo'; // To embed your key, replace '' with 'AIzaYOUR_KEY_HERE'
 let conversationHistory = [];
 let turnCount = 0;
 let gameStarted = false;
@@ -935,21 +1170,39 @@ function buildSystemPrompt() {
     return `  ${i===activeHeroIdx?'[ACTIVE] ':''}${h.name} — Lvl ${h.level} ${h.race} ${h.charClass} | HP ${h.hpCur}/${h.hpMax} AC ${h.ac} | ${statLine}${h.resources?' | '+h.resources:''}${h.backstory?' | Backstory: '+h.backstory:''}${h.inventory.length?' | Carries: '+h.inventory.join(', '):''}`;
   }).join('\n');
 
-  return `You are an expert, immersive Dungeons & Dragons 5th Edition Dungeon Master called "the Ancient Voice." Campaign: The Vale of Shadows.
+  const campName = campaign.name || 'The Vale of Shadows';
+  const settingMap = {classic_fantasy:'classic high fantasy',dark_gothic:'dark gothic horror',nautical:'nautical/pirate adventure',underdark:'subterranean Underdark',political:'political intrigue and courts',post_apocalyptic:'post-apocalyptic fallen world',eastern:'feudal eastern realms',planar:'planar/multiverse adventure'};
+  const toneMap = {epic_heroic:'epic and heroic — grand quests, noble deeds, clear stakes',gritty_realistic:'gritty and realistic — morally grey, consequences matter, survival is hard',mystery_horror:'mystery and horror — build dread slowly, the unknown is terrifying',swashbuckling:'swashbuckling and fun — witty, daring, light-hearted adventure with real stakes'};
+  const diffMap = {easy:'Forgiving difficulty — prioritise narrative fun, err on the side of player survival, monsters may not play optimally',normal:'Standard D&D 5E difficulty — balanced and fair, lethal when warranted',hard:'Deadly difficulty — be ruthless, smart enemies exploit weaknesses, bad decisions have severe consequences',permadeath:'PERMADEATH MODE — death is permanent and final, no resurrection magic works, build genuine dread in every encounter'};
+  const lengthMap = {oneshot:'This is a one-shot — self-contained, satisfying conclusion in one session',short:'This is a short campaign — focused arc, build toward a clear climax',epic:'This is an epic campaign — sprawling saga, plant seeds for long-term storylines'};
+
+  const hookContext = campaign.hook === 'custom' && campaign.customHook
+    ? `Opening scenario: ${campaign.customHook}`
+    : {mysterious_summons:'The party was drawn here by a mysterious summons — a cryptic letter, dying words, or vision',tavern_rumour:'The party heard a rumour in a tavern about reward, danger, or a missing person',ambushed:'The adventure began with sudden conflict — the party was ambushed or witnessed an attack',escaped_prisoners:'The party woke up imprisoned with no memory of how they got there',hired:'The party was hired by a patron for what seemed a simple job',prophecy:'An ancient prophecy points to the party — others believe it whether the heroes do or not'}[campaign.hook] || '';
+
+  return `You are an expert Dungeons & Dragons 5th Edition Dungeon Master called "the Ancient Voice."
+
+CAMPAIGN: ${campName}
+SETTING: ${settingMap[campaign.setting]||'classic fantasy'}
+TONE: ${toneMap[campaign.tone]||'epic and heroic'}
+DIFFICULTY: ${diffMap[campaign.difficulty]||'standard'}
+LENGTH: ${lengthMap[campaign.length]||'one-shot'}
+HOOK: ${hookContext}
+${campaign.notes?'DM NOTES: '+campaign.notes:''}
 
 THE PARTY (${party.length} hero${party.length>1?'es':''}):\n${partyDesc}
 
-The ACTIVE hero whose turn it is will be indicated in the player's messages. When multiple heroes are in the party, account for all of them in the narrative — give each a distinct presence, and track their individual HP, abilities, and resources.
+The ACTIVE hero is indicated in player messages. When multiple heroes are present, give each a distinct presence and track their individual resources.
 
 YOUR ROLE:
-- Narrate in 2nd person for the active hero, reference other party members by name
-- Enforce D&D 5E rules using each character's actual stats and modifiers
+- Narrate in 2nd person for the active hero; reference companions by name
+- Enforce D&D 5E rules using each character's actual modifiers
 - When dice are needed, specify exactly what to roll and which character rolls it
-- Give NPCs distinct memorable voices. Build tension and atmosphere.
-- Track story continuity across all messages.
-- Always end with a clear situation or question.
+- Match the tone and setting above consistently throughout the campaign
+- Give NPCs distinct memorable voices; build atmosphere appropriate to the tone
+- Track story continuity; always end with a clear situation or question
 
-STYLE: Evocative literary prose, rich sensory detail, dark fantasy tone. 2-4 paragraphs per response.`;
+STYLE: 2-4 paragraphs per response. Rich sensory detail. Tone as specified above.`;
 }
 
 function startGame() {
@@ -1011,13 +1264,40 @@ ${sessionText.substring(0, 8000)}` });
     return;
   }
 
-  // Fresh game opener
-  const partyLine = party.length > 1
-    ? ` Your companions — ${party.filter((_,i)=>i!==activeHeroIdx).map(h=>h.name).join(' and ')} — stand beside you.`
-    : '';
-  const opener = `The last echoes of the tavern fade behind you as you step into the cold night air of Millhaven. Torches flicker against rain-slicked cobblestones, casting long shadows between the crooked buildings.${partyLine} A nervous merchant pressed a crumpled map into your hands before disappearing into the crowd — her eyes wide with a fear she refused to name.\n\nThe map leads to the Vale of Shadows — a place the locals refuse to speak of by name. Three days north. Strange disappearances. A reward of 500 gold.\n\nThe eastern gate stands open ahead, but so does the door to the Broken Lantern Inn, where warmth and the smell of ale spill into the street.\n\nWhat do you do, ${active.name}?`;
-  conversationHistory.push({ role: 'assistant', content: opener });
-  addMessage('dm', '🎲 DUNGEON MASTER', opener);
+  // Fresh game opener — ask Gemini to generate it based on campaign settings
+  const campTag = campaign.name ? campaign.name : 'a new adventure';
+  addMessage('system', null, `🗺 ${campTag} begins...`);
+
+  const openingRequest = `Begin the campaign now. Write the opening scene based on the campaign settings — setting, tone, hook, and difficulty. Introduce the world, establish the atmosphere, and end with a clear prompt for ${active.name}${party.length > 1 ? ' and the party' : ''} to act. This is the very first message the player sees — make it vivid and compelling.`;
+
+  conversationHistory.push({ role: 'user', content: openingRequest });
+
+  const thinkEl = addThinking();
+  const geminiContents = [
+    {role:'user', parts:[{text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.'}]},
+    {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to begin the campaign.'}]},
+    ...conversationHistory.map(m=>({role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]}))
+  ];
+  fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + apiKey,
+    {method:'POST', headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:1024, temperature:0.92}})}
+  ).then(r=>r.json()).then(data => {
+    thinkEl.remove();
+    if (data.error) {
+      const fallback = `The adventure begins. ${active.name}, you find yourself at the start of a new journey. What do you do?`;
+      conversationHistory.push({role:'assistant', content: fallback});
+      addMessage('dm', '🎲 DUNGEON MASTER', fallback);
+    } else {
+      const reply = data.candidates[0].content.parts[0].text;
+      conversationHistory.push({role:'assistant', content: reply});
+      addMessage('dm', '🎲 DUNGEON MASTER', reply);
+      setTimeout(autoSave, 400);
+    }
+  }).catch(() => {
+    thinkEl.remove();
+    addMessage('system', null, 'The adventure begins. Enter your first action below.');
+  });
 }
 
 function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAction();} }
@@ -1111,6 +1391,92 @@ function rollDie(sides) {
   }
 }
 
+
+// ── CAMPAIGN CREATOR ──
+let campaign = {
+  name: '',
+  setting: 'classic_fantasy',
+  tone: 'epic_heroic',
+  difficulty: 'easy',
+  length: 'oneshot',
+  hook: 'mysterious_summons',
+  customHook: '',
+  notes: ''
+};
+
+function openCampaignFromParty() {
+  document.getElementById('party-overlay').classList.add('hidden');
+  openCampaignCreator();
+}
+
+function openCampaignCreator() {
+  document.getElementById('camp-name').value = campaign.name || '';
+  document.getElementById('camp-notes').value = campaign.notes || '';
+  document.getElementById('camp-custom-hook').value = campaign.customHook || '';
+  document.querySelectorAll('[data-group="setting"]').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.setting));
+  document.querySelectorAll('[data-group="tone"]').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.tone));
+  document.querySelectorAll('[data-group="length"]').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.length));
+  document.querySelectorAll('.diff-btn').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.difficulty));
+  document.querySelectorAll('.hook-item').forEach(el =>
+    el.classList.toggle('selected', el.dataset.value === campaign.hook));
+  toggleCustomHook(campaign.hook === 'custom');
+  document.getElementById('campaign-error').textContent = '';
+  document.getElementById('campaign-overlay').classList.remove('hidden');
+}
+
+function closeCampaignCreator() {
+  document.getElementById('campaign-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+function selectCampaignCard(el) {
+  const group = el.dataset.group;
+  document.querySelectorAll('[data-group="' + group + '"]').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  campaign[group] = el.dataset.value;
+}
+
+function selectDifficulty(el) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  campaign.difficulty = el.dataset.value;
+}
+
+function selectHook(el) {
+  document.querySelectorAll('.hook-item').forEach(h => h.classList.remove('selected'));
+  el.classList.add('selected');
+  campaign.hook = el.dataset.value;
+  toggleCustomHook(el.dataset.value === 'custom');
+}
+
+function toggleCustomHook(show) {
+  const el = document.getElementById('custom-hook-wrap');
+  if (el) el.style.display = show ? 'block' : 'none';
+}
+
+function confirmCampaign() {
+  campaign.name = document.getElementById('camp-name').value.trim();
+  campaign.customHook = document.getElementById('camp-custom-hook').value.trim();
+  campaign.notes = document.getElementById('camp-notes').value.trim();
+  if (campaign.hook === 'custom' && !campaign.customHook) {
+    document.getElementById('campaign-error').textContent = 'Please describe your opening scenario.';
+    return;
+  }
+  if (!campaign.name) {
+    const settingNames = {classic_fantasy:'Classic Fantasy',dark_gothic:'Dark Gothic',nautical:'Nautical Adventure',underdark:'Underdark',political:'Courts & Intrigue',post_apocalyptic:'Fallen World',eastern:'Eastern Realms',planar:'Planar Adventure'};
+    campaign.name = (settingNames[campaign.setting]||'New Campaign') + ' — ' + new Date().toLocaleDateString();
+  }
+  document.getElementById('campaign-overlay').classList.add('hidden');
+  // Update session badge
+  document.getElementById('session-badge').textContent = campaign.name.toUpperCase().substring(0,30);
+  showToast('Campaign set: ' + campaign.name);
+  // Return to party manager
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
 
 // ── IMPORT FROM CHATGPT ──
 let importedCharacters = [];
@@ -1358,10 +1724,10 @@ function allSlotIds() {
 function buildSaveData(campaignName) {
   return {
     version: 3,
-    campaignName: campaignName || currentCampaignName(),
+    campaignName: campaignName || campaign.name || currentCampaignName(),
     savedAt: new Date().toISOString(),
     party, activeHeroIdx, turnCount, gameStarted,
-    conversationHistory,
+    conversationHistory, campaign,
     eventsLog: document.getElementById('events-log').innerHTML
   };
 }
@@ -1538,6 +1904,7 @@ function loadSaveData(data) {
   turnCount = data.turnCount || 0;
   gameStarted = data.gameStarted || false;
   conversationHistory = data.conversationHistory || [];
+  if (data.campaign) campaign = data.campaign;
 
   const log = document.getElementById('story-log');
   log.innerHTML = '';

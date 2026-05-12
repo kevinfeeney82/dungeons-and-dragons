@@ -183,6 +183,17 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
 #roll-anim .roll-pop { font-family: 'Cinzel', serif; font-size: 80px; color: #d4a843; text-shadow: 0 0 40px rgba(212,168,67,0.6); animation: rollPop 0.8s ease forwards; }
 @keyframes rollPop { 0%{opacity:0;transform:scale(0.5) rotate(-20deg)} 30%{opacity:1;transform:scale(1.2) rotate(5deg)} 60%{opacity:1;transform:scale(1) rotate(0deg)} 100%{opacity:0;transform:scale(0.8)} }
 
+/* ── SAVE/LOAD ── */
+.save-bar { display: flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(5,3,1,0.9); border-top: 1px solid rgba(80,55,20,0.25); flex-shrink: 0; flex-wrap: wrap; }
+.save-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; padding: 5px 11px; border-radius: 2px; cursor: pointer; transition: all 0.15s; background: transparent; white-space: nowrap; }
+.save-btn.primary { border: 1px solid rgba(140,100,40,0.45); color: #8a6030; }
+.save-btn.primary:hover { border-color: rgba(212,168,67,0.6); color: #d4a843; background: rgba(212,168,67,0.07); }
+.save-btn.danger { border: 1px solid rgba(120,50,40,0.4); color: #5a2828; }
+.save-btn.danger:hover { border-color: rgba(180,60,50,0.5); color: #c04030; }
+.save-status { font-family: 'Cinzel', serif; font-size: 10px; color: #3a2810; margin-left: auto; letter-spacing: 0.5px; min-width: 120px; text-align: right; }
+#toast { position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%); z-index: 400; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; padding: 10px 22px; border-radius: 3px; border: 1px solid rgba(212,168,67,0.4); background: rgba(16,11,5,0.97); color: #d4a843; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; }
+#toast.show { opacity: 1; }
+
 @media (max-width: 960px) {
   .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; height: auto; }
   .left-panel { grid-column:1; grid-row:2; border-right:none; border-bottom:1px solid rgba(180,130,50,0.2); max-height: 420px; }
@@ -193,6 +204,32 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
   .stat-creator-grid { grid-template-columns: repeat(3,1fr); }
   .field-row.three { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── IMPORT FROM CHATGPT ── */
+.import-modal { max-width: 680px; }
+.import-step { display: none; }
+.import-step.active { display: block; }
+.import-textarea { width: 100%; background: rgba(20,13,5,0.9); border: 1px solid rgba(140,100,40,0.35); color: #e8d5a3; font-family: 'Crimson Text', serif; font-size: 14px; padding: 12px 14px; border-radius: 2px; outline: none; resize: vertical; min-height: 200px; line-height: 1.6; transition: border-color 0.2s; }
+.import-textarea::placeholder { color: #3a2810; font-style: italic; }
+.import-textarea:focus { border-color: rgba(212,168,67,0.5); }
+.import-hero-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.import-hero-card { background: rgba(20,13,5,0.7); border: 1px solid rgba(140,100,40,0.3); border-radius: 3px; padding: 14px; }
+.import-hero-card.selected { border-color: #d4a843; background: rgba(212,168,67,0.07); }
+.import-hero-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer; }
+.import-hero-check { width: 16px; height: 16px; border: 1px solid rgba(180,130,50,0.5); border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #d4a843; flex-shrink: 0; background: rgba(10,7,3,0.8); }
+.import-hero-check.checked { background: rgba(212,168,67,0.2); border-color: #d4a843; }
+.import-hero-card-name { font-family: 'Cinzel', serif; font-size: 14px; color: #d4a843; }
+.import-hero-card-desc { font-size: 12px; color: #8a6030; font-style: italic; }
+.import-hero-stats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.import-stat-pill { font-family: 'Cinzel', serif; font-size: 10px; color: #7a6040; background: rgba(15,10,5,0.8); border: 1px solid rgba(100,70,30,0.25); padding: 2px 7px; border-radius: 2px; }
+.import-story-preview { background: rgba(20,13,5,0.6); border: 1px solid rgba(100,70,30,0.2); border-radius: 3px; padding: 12px 14px; font-size: 13px; color: #a09060; line-height: 1.6; font-style: italic; max-height: 120px; overflow-y: auto; margin-bottom: 14px; }
+.import-spinner { text-align: center; padding: 30px; }
+.import-spinner .spin-icon { font-size: 32px; animation: spin 1.5s linear infinite; display: inline-block; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.import-spinner p { font-family: 'Cinzel', serif; font-size: 12px; color: #6a5030; letter-spacing: 1px; margin-top: 12px; }
+.import-error { font-size: 13px; color: #c04030; font-style: italic; margin: 8px 0; text-align: center; min-height: 18px; }
+.add-hero-btn-alt { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(20,13,5,0.7); border: 1px dashed rgba(140,100,40,0.4); color: #6a5030; padding: 10px; border-radius: 3px; cursor: pointer; width: 100%; transition: all 0.2s; text-align: center; margin-bottom: 8px; }
+.add-hero-btn-alt:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); }
 </style>
 </head>
 <body>
@@ -265,6 +302,61 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
   </div>
 </div>
 
+<!-- IMPORT FROM CHATGPT MODAL -->
+<div class="modal-overlay hidden" id="import-overlay">
+  <div class="modal import-modal">
+    <div class="modal-title">📜 IMPORT FROM CHATGPT</div>
+    <div class="modal-sub">Paste your ChatGPT D&D session — we'll extract your characters and continue the story</div>
+
+    <!-- Step 1: Paste -->
+    <div class="import-step active" id="import-step-1">
+      <div class="modal-section">
+        <div class="modal-section-title">Paste Your Session</div>
+        <p style="font-size:13px;color:#6a5030;font-style:italic;margin-bottom:10px;">Copy the full conversation from ChatGPT and paste it below. Include as much as possible — character sheets, story, inventory, anything you have.</p>
+        <textarea class="import-textarea" id="import-paste" placeholder="Paste your ChatGPT D&D session here...
+
+Example:
+You are playing as Mira, a Level 3 Wood Elf Ranger...
+STR 12, DEX 16, CON 13, INT 10, WIS 14, CHA 8
+HP: 24/28, AC: 14
+Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
+
+[The story so far...]"></textarea>
+      </div>
+      <div id="import-step1-error" class="import-error"></div>
+      <div class="modal-btn-row">
+        <button class="cancel-btn" onclick="closeImport()">Cancel</button>
+        <button class="begin-btn" onclick="analyseSession()">🔍 ANALYSE SESSION</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Analysing spinner -->
+    <div class="import-step" id="import-step-2">
+      <div class="import-spinner">
+        <div class="spin-icon">🔮</div>
+        <p id="import-spinner-text">THE ANCIENT VOICE READS THE SCROLL...</p>
+      </div>
+    </div>
+
+    <!-- Step 3: Review extracted characters -->
+    <div class="import-step" id="import-step-3">
+      <div class="modal-section">
+        <div class="modal-section-title">Story So Far</div>
+        <div class="import-story-preview" id="import-story-preview"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Characters Found — select which to import</div>
+        <div class="import-hero-cards" id="import-hero-cards"></div>
+      </div>
+      <div id="import-step3-error" class="import-error"></div>
+      <div class="modal-btn-row">
+        <button class="cancel-btn" onclick="importGoBack()">← Back</button>
+        <button class="begin-btn" onclick="confirmImport()">⚔ IMPORT &amp; CONTINUE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PARTY MANAGER MODAL -->
 <div class="modal-overlay hidden" id="party-overlay">
   <div class="modal party-modal">
@@ -272,9 +364,10 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
     <div class="modal-sub">Manage your heroes — click a name to make them active</div>
     <div class="party-hero-list" id="party-hero-list"></div>
     <button class="add-hero-btn" onclick="openCreatorForNew()">+ Add New Hero</button>
+    <button class="add-hero-btn-alt" onclick="openImport()">📜 Import from ChatGPT / Previous Session</button>
     <div style="height:16px"></div>
 
-    <div class="modal-section">
+    <div class="modal-section" id="apikey-section">
       <div class="modal-section-title">API Key</div>
       <div class="field-row single">
         <div class="field"><label>Google Gemini API Key — free at aistudio.google.com</label>
@@ -429,7 +522,16 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
     <span id="turn-count">TURN 0</span>
     <span>D&amp;D 5E RULES</span>
   </div>
+
+  <!-- SAVE BAR -->
+  <div class="save-bar" style="grid-column:1/-1;grid-row:4;">
+    <button class="save-btn primary" onclick="exportSave()">&#x2B07; Export Save</button>
+    <label class="save-btn primary" style="cursor:pointer;display:inline-block;">&#x2B06; Import Save<input type="file" accept=".json" onchange="importSave(event)" style="display:none"></label>
+    <button class="save-btn danger" onclick="clearSave()">&#x2715; New Game</button>
+    <div class="save-status" id="save-status">No save found</div>
+  </div>
 </div>
+<div id="toast"></div>
 
 <script>
 const PORTRAITS = ['🧙','🧝','🧛','🗡','🛡','🏹','🔮','⚔','🌿','🔥','💀','🐉','🦅','🐺','🌙','✨','🎭','🗺','🧟','🦸'];
@@ -440,7 +542,7 @@ let party = [];           // array of character objects
 let activeHeroIdx = 0;    // which hero is currently speaking / shown
 let editingHeroIdx = null;// null = new hero, number = editing existing
 let selectedPortrait = PORTRAITS[0];
-let apiKey = '';
+let apiKey = 'AIzaSyAYlJKa68rgcIJGvwddMTPBaYGocvLExE8'; // Replace with your key
 let conversationHistory = [];
 let turnCount = 0;
 let gameStarted = false;
@@ -578,6 +680,10 @@ function openPartyManager() {
   renderPartyManager();
   document.getElementById('party-apikey').value = '';
   document.getElementById('party-error').textContent = '';
+  // Hide API key field if key is already embedded in the file
+  const keyEmbedded = apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE' && apiKey.startsWith('AIza');
+  const section = document.getElementById('apikey-section');
+  if (section) section.style.display = keyEmbedded ? 'none' : '';
   document.getElementById('party-overlay').classList.remove('hidden');
 }
 
@@ -590,7 +696,7 @@ function savePartySettings() {
   const err = document.getElementById('party-error');
   if (keyInput && !keyInput.startsWith('AIza')) { err.textContent = 'Key should start with AIza.'; return; }
   if (keyInput) apiKey = keyInput;
-  if (!apiKey && party.length > 0) { err.textContent = 'Please enter your Gemini API key.'; return; }
+  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') { err.textContent = 'Please enter your Gemini API key.'; return; }
   if (party.length === 0) { err.textContent = 'Add at least one hero before beginning.'; return; }
   closePartyManager();
   renderPartyStrip();
@@ -728,6 +834,60 @@ function startGame() {
   const names = party.map(h=>h.name).join(', ');
   addMessage('system', null, `⚔ ${names} enter${party.length===1?'s':''} the realm... ⚔`);
   const active = party[activeHeroIdx];
+
+  // Check if we have an imported session to continue from
+  if (window._importedStorySummary) {
+    const summary = window._importedStorySummary;
+    const sessionText = window._importedSessionText || '';
+    window._importedStorySummary = null;
+    window._importedSessionText = null;
+
+    // Seed conversation with imported context
+    conversationHistory.push({ role: 'user', content: `[CONTEXT: The following is a D&D session that was previously played. Please continue as the Dungeon Master from where it left off.]
+
+STORY SO FAR:
+${summary}
+
+FULL SESSION (for context):
+${sessionText.substring(0, 8000)}` });
+    conversationHistory.push({ role: 'assistant', content: `Understood. I will continue as the Dungeon Master from where your previous session ended.` });
+
+    addMessage('system', null, '📜 Continuing your previous session...');
+
+    // Ask Gemini to open with a continuation
+    const continuePrompt = `${active.name} and their party have returned to continue their adventure. Briefly recap where things stand — the location, any immediate threats or situations — then ask what the party does next. Keep it to 2 paragraphs.`;
+    conversationHistory.push({ role: 'user', content: continuePrompt });
+
+    const thinkEl = addThinking();
+    const geminiContents = [
+      {role:'user', parts:[{text: buildSystemPrompt()+'
+
+Acknowledge your role briefly.'}]},
+      {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to continue the adventure.'}]},
+      ...conversationHistory.map(m=>({role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]}))
+    ];
+    fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+      {method:'POST', headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:1024, temperature:0.85}})}
+    ).then(r=>r.json()).then(data => {
+      thinkEl.remove();
+      if (data.error) {
+        addMessage('system', null, 'Your previous session has been loaded. Continue your adventure!');
+      } else {
+        const reply = data.candidates[0].content.parts[0].text;
+        conversationHistory.push({role:'assistant', content: reply});
+        addMessage('dm', '🎲 DUNGEON MASTER', reply);
+        setTimeout(autoSave, 400);
+      }
+    }).catch(() => {
+      thinkEl.remove();
+      addMessage('system', null, 'Your previous session has been loaded. Continue your adventure!');
+    });
+    return;
+  }
+
+  // Fresh game opener
   const partyLine = party.length > 1
     ? ` Your companions — ${party.filter((_,i)=>i!==activeHeroIdx).map(h=>h.name).join(' and ')} — stand beside you.`
     : '';
@@ -827,8 +987,391 @@ function rollDie(sides) {
   }
 }
 
-// Open party manager on load
-openPartyManager();
+
+// ── IMPORT FROM CHATGPT ──
+let importedCharacters = [];
+let importedStorySummary = '';
+
+function openImport() {
+  document.getElementById('party-overlay').classList.add('hidden');
+  showImportStep(1);
+  document.getElementById('import-paste').value = '';
+  document.getElementById('import-step1-error').textContent = '';
+  document.getElementById('import-step3-error').textContent = '';
+  importedCharacters = [];
+  importedStorySummary = '';
+  document.getElementById('import-overlay').classList.remove('hidden');
+}
+
+function closeImport() {
+  document.getElementById('import-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+function importGoBack() {
+  showImportStep(1);
+}
+
+function showImportStep(n) {
+  document.querySelectorAll('.import-step').forEach(el => el.classList.remove('active'));
+  document.getElementById('import-step-' + n).classList.add('active');
+}
+
+async function analyseSession() {
+  const text = document.getElementById('import-paste').value.trim();
+  const err = document.getElementById('import-step1-error');
+  if (!text || text.length < 80) { err.textContent = 'Please paste more of your session — the more detail, the better the extraction.'; return; }
+  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') { err.textContent = 'Please enter your Gemini API key in the Party Manager first.'; return; }
+  err.textContent = '';
+  showImportStep(2);
+
+  const spinnerMessages = [
+    'THE ANCIENT VOICE READS THE SCROLL...',
+    'DECIPHERING CHARACTER SHEETS...',
+    'PIECING TOGETHER THE STORY...',
+    'ALMOST READY...'
+  ];
+  let spinIdx = 0;
+  const spinTimer = setInterval(() => {
+    spinIdx = (spinIdx + 1) % spinnerMessages.length;
+    const el = document.getElementById('import-spinner-text');
+    if (el) el.textContent = spinnerMessages[spinIdx];
+  }, 1800);
+
+  const PORTRAITS_MAP = {
+    'Barbarian':'🪓','Bard':'🎭','Cleric':'✨','Druid':'🌿','Fighter':'🛡',
+    'Monk':'🥋','Paladin':'⚔','Ranger':'🏹','Rogue':'🗡','Sorcerer':'🔥',
+    'Warlock':'💀','Wizard':'🔮','default':'🧙'
+  };
+
+  const prompt = `You are a D&D 5E expert assistant. Analyse the following ChatGPT D&D session transcript and extract structured data.
+
+Return ONLY valid JSON with no markdown fences, no explanation, no preamble. The JSON must have this exact structure:
+{
+  "storySummary": "2-3 sentence summary of where the story is at and what just happened",
+  "characters": [
+    {
+      "name": "Character name",
+      "race": "Race (Human/Elf/Dwarf/Halfling/Half-Elf/Half-Orc/Tiefling/Gnome/Dragonborn/Aasimar/Tabaxi/Other)",
+      "charClass": "Class (Barbarian/Bard/Cleric/Druid/Fighter/Monk/Paladin/Ranger/Rogue/Sorcerer/Warlock/Wizard)",
+      "level": 1,
+      "backstory": "Any backstory or notes about this character",
+      "stats": { "STR": 10, "DEX": 10, "CON": 10, "INT": 10, "WIS": 10, "CHA": 10 },
+      "hpCur": 10,
+      "hpMax": 10,
+      "ac": 12,
+      "resources": "Any spell slots, ki points, rage uses etc. Leave empty string if none.",
+      "inventory": ["item1", "item2"],
+      "isPlayerCharacter": true
+    }
+  ]
+}
+
+Rules:
+- Only include player characters (not NPCs or monsters)
+- If a stat is not mentioned, make a reasonable estimate based on class and level
+- If HP is not mentioned, calculate a reasonable estimate based on class and level
+- isPlayerCharacter should be true only for actual player characters the user controls
+- Include all items mentioned as belonging to each character
+- The storySummary should describe the current situation so the DM can continue from here
+
+SESSION TRANSCRIPT:
+${text.substring(0, 12000)}`;
+
+  try {
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 2048, temperature: 0.2 }
+        })
+      }
+    );
+    const data = await response.json();
+    clearInterval(spinTimer);
+
+    if (data.error) throw new Error(data.error.message);
+
+    let raw = data.candidates[0].content.parts[0].text.trim();
+    // Strip any markdown fences if present
+    raw = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    const parsed = JSON.parse(raw);
+    if (!parsed.characters || !Array.isArray(parsed.characters)) throw new Error('No characters found in session');
+
+    importedCharacters = parsed.characters
+      .filter(c => c.isPlayerCharacter !== false)
+      .map(c => ({
+        ...c,
+        portrait: PORTRAITS_MAP[c.charClass] || PORTRAITS_MAP['default'],
+        stats: {
+          STR: parseInt(c.stats?.STR)||10, DEX: parseInt(c.stats?.DEX)||10,
+          CON: parseInt(c.stats?.CON)||10, INT: parseInt(c.stats?.INT)||10,
+          WIS: parseInt(c.stats?.WIS)||10, CHA: parseInt(c.stats?.CHA)||10
+        },
+        hpCur: parseInt(c.hpCur)||10,
+        hpMax: parseInt(c.hpMax)||10,
+        ac: parseInt(c.ac)||12,
+        level: parseInt(c.level)||1,
+        inventory: Array.isArray(c.inventory) ? c.inventory : [],
+        resources: c.resources || '',
+        backstory: c.backstory || ''
+      }));
+
+    importedStorySummary = parsed.storySummary || '';
+
+    if (importedCharacters.length === 0) throw new Error('No player characters could be identified. Try pasting more of the session.');
+
+    renderImportReview();
+    showImportStep(3);
+
+  } catch(err) {
+    clearInterval(spinTimer);
+    showImportStep(1);
+    document.getElementById('import-step1-error').textContent = 'Could not extract characters: ' + err.message;
+  }
+}
+
+function renderImportReview() {
+  document.getElementById('import-story-preview').textContent = importedStorySummary || 'No story summary available.';
+
+  const container = document.getElementById('import-hero-cards');
+  container.innerHTML = '';
+
+  importedCharacters.forEach((c, i) => {
+    c._selected = true;
+    const card = document.createElement('div');
+    card.className = 'import-hero-card selected';
+    card.id = 'icard-' + i;
+
+    const statPills = ['STR','DEX','CON','INT','WIS','CHA'].map(s =>
+      '<span class="import-stat-pill">' + s + ' ' + (c.stats[s]||10) + '</span>'
+    ).join('');
+
+    card.innerHTML =
+      '<div class="import-hero-card-header" onclick="toggleImportHero(' + i + ')">' +
+        '<div class="import-hero-check checked" id="icheck-' + i + '">✓</div>' +
+        '<div class="char-portrait" style="width:36px;height:36px;font-size:18px;flex-shrink:0;">' + c.portrait + '</div>' +
+        '<div>' +
+          '<div class="import-hero-card-name">' + c.name + '</div>' +
+          '<div class="import-hero-card-desc">Lvl ' + c.level + ' ' + c.race + ' ' + c.charClass + ' · HP ' + c.hpCur + '/' + c.hpMax + ' · AC ' + c.ac + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="import-hero-stats">' + statPills + '</div>' +
+      (c.inventory.length ? '<div style="font-size:11px;color:#6a5030;margin-top:6px;font-style:italic;">Carries: ' + c.inventory.slice(0,6).join(', ') + (c.inventory.length>6?'...':'') + '</div>' : '') +
+      (c.backstory ? '<div style="font-size:11px;color:#5a4020;margin-top:4px;font-style:italic;">' + c.backstory.substring(0,120) + (c.backstory.length>120?'...':'') + '</div>' : '');
+
+    container.appendChild(card);
+  });
+}
+
+function toggleImportHero(i) {
+  importedCharacters[i]._selected = !importedCharacters[i]._selected;
+  const card = document.getElementById('icard-' + i);
+  const check = document.getElementById('icheck-' + i);
+  card.classList.toggle('selected', importedCharacters[i]._selected);
+  check.classList.toggle('checked', importedCharacters[i]._selected);
+  check.textContent = importedCharacters[i]._selected ? '✓' : '';
+}
+
+function confirmImport() {
+  const err = document.getElementById('import-step3-error');
+  const selected = importedCharacters.filter(c => c._selected);
+  if (selected.length === 0) { err.textContent = 'Please select at least one character to import.'; return; }
+  if (party.length + selected.length > MAX_PARTY) {
+    err.textContent = 'Too many heroes — party limit is ' + MAX_PARTY + '. Deselect some or remove existing heroes first.';
+    return;
+  }
+
+  // Add to party
+  selected.forEach(c => {
+    const hero = { ...c };
+    delete hero._selected;
+    party.push(hero);
+  });
+  if (party.length > 0 && !gameStarted) activeHeroIdx = 0;
+
+  document.getElementById('import-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+
+  renderPartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+
+  // Store story summary so startGame can use it
+  if (importedStorySummary) {
+    window._importedStorySummary = importedStorySummary;
+    window._importedSessionText = document.getElementById('import-paste').value.trim();
+  }
+
+  showToast(selected.length + ' hero' + (selected.length>1?'es':'') + ' imported! Save your key and begin.');
+}
+
+// ── SAVE / LOAD ──
+const SAVE_KEY = 'chronicle_shadow_save';
+
+function buildSaveData() {
+  return {
+    version: 2,
+    savedAt: new Date().toISOString(),
+    party, activeHeroIdx, turnCount, gameStarted,
+    conversationHistory,
+    eventsLog: document.getElementById('events-log').innerHTML
+  };
+}
+
+function autoSave() {
+  if (!gameStarted) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(buildSaveData()));
+    updateSaveStatus();
+  } catch(e) { console.warn('Auto-save failed:', e); }
+}
+
+function updateSaveStatus() {
+  const el = document.getElementById('save-status');
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { el.textContent = 'No save found'; return; }
+    const d = JSON.parse(raw);
+    const dt = new Date(d.savedAt);
+    const ago = formatAgo(dt);
+    el.textContent = `Auto-saved ${ago}`;
+  } catch(e) { el.textContent = 'Save data error'; }
+}
+
+function formatAgo(date) {
+  const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (secs < 5) return 'just now';
+  if (secs < 60) return secs + 's ago';
+  if (secs < 3600) return Math.floor(secs/60) + 'm ago';
+  if (secs < 86400) return Math.floor(secs/3600) + 'h ago';
+  return Math.floor(secs/86400) + 'd ago';
+}
+
+function exportSave() {
+  if (!gameStarted) { showToast('Nothing to export yet — start a game first.'); return; }
+  const data = buildSaveData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const partyNames = party.map(h=>h.name.replace(/\s+/g,'-')).join('_');
+  a.href = url;
+  a.download = `chronicle-shadow_${partyNames}_turn${turnCount}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Save file exported!');
+}
+
+function importSave(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.party || !data.conversationHistory) throw new Error('Invalid save file');
+      loadSaveData(data);
+      showToast('Save loaded — welcome back, ' + data.party[data.activeHeroIdx||0].name + '!');
+    } catch(err) {
+      showToast('Could not read save file — is it a Chronicle & Shadow save?');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function loadSaveData(data) {
+  party = data.party || [];
+  activeHeroIdx = data.activeHeroIdx || 0;
+  turnCount = data.turnCount || 0;
+  gameStarted = data.gameStarted || false;
+  conversationHistory = data.conversationHistory || [];
+
+  // Restore story log
+  const log = document.getElementById('story-log');
+  log.innerHTML = '';
+  conversationHistory.forEach(m => {
+    if (m.role === 'assistant') addMessage('dm', '🎲 DUNGEON MASTER', m.content);
+    else if (m.role === 'user') {
+      const content = m.content.replace(/^\[.*?\]\s*/, '');
+      const name = party[activeHeroIdx] ? party[activeHeroIdx].name.toUpperCase() : 'HERO';
+      addMessage('player', name, content);
+    }
+  });
+  addMessage('system', null, '📜 Session resumed — the story continues...');
+
+  if (data.eventsLog) document.getElementById('events-log').innerHTML = data.eventsLog;
+  document.getElementById('turn-count').textContent = 'TURN ' + turnCount;
+
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  updateSaveStatus();
+}
+
+function clearSave() {
+  if (!confirm('Start a new game? This will clear the current session and saved progress.')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  party = []; activeHeroIdx = 0; turnCount = 0; gameStarted = false;
+  conversationHistory = [];
+  document.getElementById('story-log').innerHTML = '';
+  document.getElementById('events-log').innerHTML = 'A new adventure awaits...';
+  document.getElementById('turn-count').textContent = 'TURN 0';
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  updateSaveStatus();
+  addMessage('system', null, '⚔ New game started. Open the Party Manager to forge your heroes. ⚔');
+  showToast('New game started.');
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// Auto-save after every DM response
+const _origAddMsg = addMessage;
+// Patch sendAction to auto-save after each turn
+const _origSendAction = sendAction;
+sendAction = async function() {
+  await _origSendAction.apply(this, arguments);
+  setTimeout(autoSave, 400);
+};
+
+// ── BOOT: check for existing save ──
+(function boot() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.gameStarted && data.party && data.party.length > 0) {
+        const dt = new Date(data.savedAt);
+        const ago = formatAgo(dt);
+        const names = data.party.map(h=>h.name).join(', ');
+        const resume = confirm(`A saved game was found!
+
+Party: ${names}
+Turn: ${data.turnCount}
+Saved: ${ago}
+
+Resume this adventure?`);
+        if (resume) {
+          loadSaveData(data);
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  updateSaveStatus();
+  openPartyManager();
+})();
 </script>
 </body>
 </html>

@@ -550,6 +550,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     <div class="modal-sub">Manage your heroes — click a name to make them active</div>
     <div class="party-hero-list" id="party-hero-list"></div>
     <button class="add-hero-btn" onclick="openCreatorForNew()">+ Add New Hero</button>
+    <button class="add-hero-btn-alt" onclick="openRoster()">📚 Hero Roster (Save / Load Heroes)</button>
     <button class="add-hero-btn-alt" onclick="openImport()">📜 Import from ChatGPT / Previous Session</button>
     <button class="add-hero-btn-alt" style="border-color:rgba(200,150,60,0.65);color:#8a6030;" onclick="openCampaignFromParty()">🗺 Campaign Settings</button>
     <div style="height:16px"></div>
@@ -781,6 +782,28 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     <div class="modal-btn-row">
       <button class="cancel-btn" onclick="closeCampaignCreator()">← Back</button>
       <button class="begin-btn" onclick="confirmCampaign()">🗺 BEGIN THE CAMPAIGN ⚔</button>
+    </div>
+  </div>
+</div>
+
+<!-- HERO ROSTER MODAL -->
+<div class="modal-overlay hidden" id="roster-overlay">
+  <div class="modal roster-modal">
+    <div class="modal-title">📚 HERO ROSTER</div>
+    <div class="modal-sub">Your saved heroes — add them to any campaign</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Saved Heroes</div>
+      <div class="roster-hero-list" id="roster-hero-list"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Save Current Party to Roster</div>
+      <div id="roster-save-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+    </div>
+
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeRoster()">Close</button>
     </div>
   </div>
 </div>
@@ -1834,6 +1857,142 @@ function getActiveQuestContext() {
   const q = quests.find(q => q.id === activeQuestId);
   if (!q) return '';
   return 'ACTIVE QUEST: ' + q.title + (q.desc ? ' — ' + q.desc : '');
+}
+
+// ── HERO ROSTER ──
+const ROSTER_KEY = 'cs2_hero_roster';
+
+function loadRoster() {
+  try {
+    const raw = localStorage.getItem(ROSTER_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveRoster(roster) {
+  try { localStorage.setItem(ROSTER_KEY, JSON.stringify(roster)); } catch(e) {}
+}
+
+function openRoster() {
+  document.getElementById('party-overlay').classList.add('hidden');
+  renderRoster();
+  document.getElementById('roster-overlay').classList.remove('hidden');
+}
+
+function closeRoster() {
+  document.getElementById('roster-overlay').classList.add('hidden');
+  document.getElementById('party-overlay').classList.remove('hidden');
+}
+
+function renderRoster() {
+  const roster = loadRoster();
+  const list = document.getElementById('roster-hero-list');
+
+  if (roster.length === 0) {
+    list.innerHTML = '<div class="roster-empty">No saved heroes yet.<br>Save heroes from your current party below.</div>';
+  } else {
+    list.innerHTML = '';
+    roster.forEach((h, i) => {
+      const row = document.createElement('div');
+      row.className = 'roster-hero-row';
+      row.innerHTML =
+        '<div class="roster-portrait">' + h.portrait + '</div>' +
+        '<div class="roster-info">' +
+          '<div class="roster-name">' + h.name + '</div>' +
+          '<div class="roster-desc">Lvl ' + h.level + ' ' + h.race + ' ' + h.charClass +
+            ' · HP ' + h.hpMax + ' · AC ' + h.ac + '</div>' +
+        '</div>' +
+        '<div class="roster-actions">' +
+          '<button class="roster-btn add" onclick="addRosterHeroToParty(' + i + ')">+ Add to Party</button>' +
+          '<button class="roster-btn del" onclick="deleteRosterHero(' + i + ')">✕</button>' +
+        '</div>';
+      list.appendChild(row);
+    });
+  }
+
+  // Show save buttons for current party heroes
+  const saveList = document.getElementById('roster-save-list');
+  if (party.length === 0) {
+    saveList.innerHTML = '<div style="font-size:12px;color:#605030;font-style:italic;">No heroes in current party.</div>';
+  } else {
+    saveList.innerHTML = '';
+    party.forEach((h, i) => {
+      const alreadySaved = roster.some(r => r.name === h.name && r.charClass === h.charClass);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 10px;background:rgba(42,30,12,0.6);border:1px solid rgba(140,100,40,0.25);border-radius:3px;';
+
+      const portrait = document.createElement('span');
+      portrait.style.fontSize = '18px';
+      portrait.textContent = h.portrait;
+
+      const info = document.createElement('span');
+      info.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:12px;color:#d0aa70;';
+      info.textContent = h.name + ' — ' + h.race + ' ' + h.charClass;
+
+      row.appendChild(portrait);
+      row.appendChild(info);
+
+      if (alreadySaved) {
+        const saved = document.createElement('span');
+        saved.style.cssText = 'font-size:11px;color:#6a9060;font-style:italic;';
+        saved.textContent = '✓ Already saved';
+        row.appendChild(saved);
+      } else {
+        const btn = document.createElement('button');
+        btn.className = 'roster-btn add';
+        btn.textContent = 'Save';
+        btn.onclick = (function(idx){ return function(){ saveHeroToRoster(idx); }; })(i);
+        row.appendChild(btn);
+      }
+      saveList.appendChild(row);
+    });
+  }
+}
+
+function saveHeroToRoster(partyIdx) {
+  const hero = { ...party[partyIdx] };
+  const roster = loadRoster();
+  // Avoid duplicates by name+class
+  const exists = roster.findIndex(r => r.name === hero.name && r.charClass === hero.charClass);
+  if (exists >= 0) {
+    roster[exists] = hero; // Update existing
+    showToast(hero.name + ' updated in roster.');
+  } else {
+    roster.push(hero);
+    showToast(hero.name + ' saved to roster!');
+  }
+  saveRoster(roster);
+  renderRoster();
+}
+
+function addRosterHeroToParty(rosterIdx) {
+  if (party.length >= MAX_PARTY) {
+    showToast('Party is full! Remove a hero first.');
+    return;
+  }
+  const roster = loadRoster();
+  const hero = { ...roster[rosterIdx] };
+  // Check if already in party
+  if (party.some(p => p.name === hero.name)) {
+    showToast(hero.name + ' is already in the party.');
+    return;
+  }
+  party.push(hero);
+  renderPartyManager();
+  renderPartyStrip();
+  updateActiveHeroDisplay();
+  showToast(hero.name + ' added to party!');
+  renderRoster(); // refresh save list
+}
+
+function deleteRosterHero(rosterIdx) {
+  const roster = loadRoster();
+  const name = roster[rosterIdx].name;
+  if (!confirm('Remove ' + name + ' from the roster?')) return;
+  roster.splice(rosterIdx, 1);
+  saveRoster(roster);
+  renderRoster();
+  showToast(name + ' removed from roster.');
 }
 
 // ── CAMPAIGN CREATOR ──

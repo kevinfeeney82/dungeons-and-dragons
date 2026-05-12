@@ -908,9 +908,7 @@ ${sessionText.substring(0, 8000)}` });
 
     const thinkEl = addThinking();
     const geminiContents = [
-      {role:'user', parts:[{text: buildSystemPrompt()+'
-
-Acknowledge your role briefly.'}]},
+      {role:'user', parts:[{text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.'}]},
       {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to continue the adventure.'}]},
       ...conversationHistory.map(m=>({role:m.role==='assistant'?'model':'user', parts:[{text:m.content}]}))
     ];

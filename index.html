@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; min-height: 100dvh; font-family: 'Crimson Text', Georgia, serif; background: #0a0806; color: #e8d5a3; overflow-x: hidden; overflow-y: hidden; }
+html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; background: #0a0806; color: #e8d5a3; overflow-x: hidden; }
 .parchment-bg { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse at 20% 50%, rgba(139,69,19,0.07) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(101,67,33,0.06) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(80,40,10,0.08) 0%, transparent 50%), #0a0806; }
 
 /* ── MODALS ── */
@@ -217,100 +217,93 @@ html, body { height: 100%; min-height: 100dvh; font-family: 'Crimson Text', Geor
 .empty-slots { font-size: 13px; color: #3a2810; font-style: italic; text-align: center; padding: 20px; }
 
 @media (max-width: 960px) {
-  /* Stack into a single-column full-screen layout */
-  html, body { overflow: hidden; height: 100%; height: 100dvh; }
+  /* Inside Google Sites iframe - use natural scroll layout, not fixed viewport */
+  html, body { height: auto; overflow-x: hidden; overflow-y: auto; }
 
   .app {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto auto;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    grid-template-rows: auto auto auto auto auto auto;
+    height: auto;
+    min-height: 600px;
   }
 
-  /* Top bar - compact on mobile */
-  .top-bar { grid-column:1; grid-row:1; padding: 10px 14px 8px; }
-  .title-area h1 { font-size: 16px; letter-spacing: 1px; }
+  .top-bar { grid-column:1; grid-row:1; padding: 10px 12px 8px; }
+  .title-area h1 { font-size: 15px; letter-spacing: 1px; }
   .title-area .subtitle { display: none; }
+  .title-area .torch-icon { font-size: 18px; }
   .top-btn { font-size: 9px; padding: 4px 8px; }
   .session-badge { display: none; }
+  .top-right { gap: 6px; }
 
-  /* Main chat area - takes all available space */
-  .main-area {
-    grid-column: 1; grid-row: 2;
-    display: flex; flex-direction: column;
-    overflow: hidden; min-height: 0;
+  /* Character panel - collapsible accordion */
+  .left-panel {
+    grid-column:1; grid-row:2;
+    border-right: none;
+    border-bottom: 1px solid rgba(180,130,50,0.2);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
   }
+  .left-panel.panel-open { max-height: 600px; }
+  .party-strip { padding: 8px 12px; }
+  .char-details { padding: 10px 12px; gap: 12px; }
+  .strip-hero { width: 30px; height: 30px; font-size: 14px; }
 
+  /* Main chat area */
+  .main-area { grid-column:1; grid-row:3; }
   .story-log {
-    flex: 1;
     overflow-y: auto;
     padding: 14px 14px;
-    max-height: none;
+    min-height: 280px;
+    max-height: 50vh;
     -webkit-overflow-scrolling: touch;
   }
-
-  .input-area { padding: 8px 12px 10px; flex-shrink: 0; }
+  .input-area { padding: 8px 12px 10px; }
   .speaking-as { font-size: 9px; margin-bottom: 5px; }
   .action-input { font-size: 15px; min-height: 38px; }
   .send-btn { font-size: 11px; padding: 8px 12px; height: 38px; }
-  .quick-actions { gap: 5px; margin-top: 7px; }
+  .quick-actions { gap: 5px; margin-top: 6px; }
   .quick-btn { font-size: 10px; padding: 3px 7px; }
 
-  /* Bottom bar - compact */
-  .bottom-bar { grid-column:1; grid-row:3; padding: 5px 12px; }
+  /* Right panel - horizontal wrap */
+  .right-panel {
+    grid-column:1; grid-row:4;
+    border-left: none;
+    border-top: 1px solid rgba(180,130,50,0.2);
+    flex-direction: row; flex-wrap: wrap; gap: 10px; padding: 12px;
+  }
+  .right-panel > div { flex: 1; min-width: 140px; }
+
+  .bottom-bar { grid-column:1; grid-row:5; padding: 5px 12px; }
   .bottom-bar span { font-size: 9px; }
 
-  /* Save bar */
-  .save-bar { grid-column:1; grid-row:4; padding: 5px 10px; gap: 6px; }
-  .save-btn { font-size: 9px; padding: 4px 8px; }
-  .save-status { font-size: 9px; }
+  .save-bar { grid-column:1; grid-row:6 !important; padding: 5px 10px; gap: 5px; }
+  .save-btn { font-size: 9px; padding: 4px 7px; }
+  .save-status { font-size: 9px; min-width: 0; }
 
-  /* Hide side panels on mobile - accessible via buttons */
-  .left-panel { display: none; }
-  .right-panel { display: none; }
-
-  /* Show left panel as slide-in overlay when .panel-open */
-  .left-panel.panel-open {
-    display: flex; flex-direction: column;
-    position: fixed; top: 0; left: 0; bottom: 0;
-    width: 80vw; max-width: 300px;
-    z-index: 150; background: #0d0905;
-    border-right: 1px solid rgba(180,130,50,0.3);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.6);
-    animation: slideInLeft 0.2s ease;
-    overflow-y: auto;
-  }
-  @keyframes slideInLeft { from{transform:translateX(-100%)} to{transform:translateX(0)} }
-
-  .panel-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5); z-index: 140;
-  }
-  .panel-overlay.show { display: block; }
-
-  /* Modals full-screen on mobile */
-  .modal { padding: 20px 18px; max-height: 92dvh; border-radius: 0; }
+  /* Modals slide up from bottom */
+  .modal { padding: 18px 16px; max-height: 85vh; border-radius: 3px 3px 0 0; }
   .modal-overlay { padding: 0; align-items: flex-end; }
   .modal-title { font-size: 16px; }
+  .party-modal, .saves-modal, .import-modal { max-width: 100%; }
 
-  /* Form adjustments */
   .stat-creator-grid { grid-template-columns: repeat(3,1fr); }
   .field-row.three { grid-template-columns: 1fr 1fr; }
   .field-row { grid-template-columns: 1fr; }
-
-  /* Party strip compact */
   .party-strip { padding: 7px 10px 6px; }
-  .strip-hero { width: 30px; height: 30px; font-size: 14px; }
+
+  .panel-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 140;
+  }
+  .panel-overlay.show { display: block; }
 }
 
-/* Very small phones */
 @media (max-width: 380px) {
-  .title-area h1 { font-size: 14px; }
+  .title-area h1 { font-size: 13px; }
   .top-btn { font-size: 8px; padding: 3px 6px; }
+  .story-log { max-height: 40vh; }
 }
-
-/* ── IMPORT FROM CHATGPT ── */
 .import-modal { max-width: 680px; }
 .import-step { display: none; }
 .import-step.active { display: block; }

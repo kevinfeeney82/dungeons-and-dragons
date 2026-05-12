@@ -74,7 +74,7 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
 .add-hero-btn:hover { color: #c4a030; border-color: rgba(180,130,50,0.5); background: rgba(30,20,8,0.8); }
 
 /* ── APP ── */
-.app { position: relative; z-index: 1; display: grid; grid-template-columns: 270px 1fr 220px; grid-template-rows: auto 1fr auto; height: 100vh; max-width: 1200px; margin: 0 auto; }
+.app { position: relative; z-index: 1; display: grid; grid-template-columns: 270px 1fr 220px; grid-template-rows: auto 1fr auto auto; height: 100vh; max-width: 1200px; margin: 0 auto; }
 .top-bar { grid-column: 1/-1; padding: 14px 24px 12px; border-bottom: 1px solid rgba(180,130,50,0.3); display: flex; align-items: center; justify-content: space-between; background: rgba(15,10,5,0.9); flex-shrink: 0; }
 .title-area { display: flex; align-items: center; gap: 16px; }
 .title-area h1 { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: #d4a843; letter-spacing: 2px; text-shadow: 0 0 20px rgba(212,168,67,0.3); }
@@ -217,11 +217,11 @@ html, body { height: 100%; font-family: 'Crimson Text', Georgia, serif; backgrou
 .empty-slots { font-size: 13px; color: #3a2810; font-style: italic; text-align: center; padding: 20px; }
 
 @media (max-width: 960px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; height: auto; }
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto auto; height: auto; }
   .left-panel { grid-column:1; grid-row:2; border-right:none; border-bottom:1px solid rgba(180,130,50,0.2); max-height: 420px; }
   .main-area { grid-column:1; grid-row:3; min-height:400px; }
   .right-panel { grid-column:1; grid-row:4; border-left:none; border-top:1px solid rgba(180,130,50,0.2); }
-  .bottom-bar { grid-column:1; grid-row:5; }
+  .bottom-bar { grid-column:1; grid-row:5; } .save-bar-wrap { grid-column:1; grid-row:6; }
   .story-log { max-height:50vh; }
   .stat-creator-grid { grid-template-columns: repeat(3,1fr); }
   .field-row.three { grid-template-columns: 1fr 1fr; }
@@ -590,7 +590,7 @@ let party = [];           // array of character objects
 let activeHeroIdx = 0;    // which hero is currently speaking / shown
 let editingHeroIdx = null;// null = new hero, number = editing existing
 let selectedPortrait = PORTRAITS[0];
-let apiKey = 'YOUR_GEMINI_API_KEY_HERE'; // Replace with your key
+let apiKey = 'AIzaSyAYlJKa68rgcIJGvwddMTPBaYGocvLExE8'; // To embed your key, replace '' with 'AIzaYOUR_KEY_HERE'
 let conversationHistory = [];
 let turnCount = 0;
 let gameStarted = false;
@@ -729,7 +729,7 @@ function openPartyManager() {
   document.getElementById('party-apikey').value = '';
   document.getElementById('party-error').textContent = '';
   // Hide API key field if key is already embedded in the file
-  const keyEmbedded = apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE' && apiKey.startsWith('AIza');
+  const keyEmbedded = apiKey && apiKey.startsWith('AIza');
   const section = document.getElementById('apikey-section');
   if (section) section.style.display = keyEmbedded ? 'none' : '';
   document.getElementById('party-overlay').classList.remove('hidden');
@@ -744,7 +744,7 @@ function savePartySettings() {
   const err = document.getElementById('party-error');
   if (keyInput && !keyInput.startsWith('AIza')) { err.textContent = 'Key should start with AIza.'; return; }
   if (keyInput) apiKey = keyInput;
-  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') { err.textContent = 'Please enter your Gemini API key.'; return; }
+  if (!apiKey) { err.textContent = 'Please enter your Gemini API key.'; return; }
   if (party.length === 0) { err.textContent = 'Add at least one hero before beginning.'; return; }
   closePartyManager();
   renderPartyStrip();
@@ -1069,7 +1069,7 @@ async function analyseSession() {
   const text = document.getElementById('import-paste').value.trim();
   const err = document.getElementById('import-step1-error');
   if (!text || text.length < 80) { err.textContent = 'Please paste more of your session — the more detail, the better the extraction.'; return; }
-  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') { err.textContent = 'Please enter your Gemini API key in the Party Manager first.'; return; }
+  if (!apiKey) { err.textContent = 'Please enter your Gemini API key in the Party Manager first.'; return; }
   err.textContent = '';
   showImportStep(2);
 

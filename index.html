@@ -860,6 +860,39 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
   </div>
 
   <div class="main-area">
+    <!-- Narration Bar -->
+    <div id="narration-bar" style="
+      display:flex; align-items:center; gap:8px; padding:5px 20px;
+      background:rgba(20,15,8,0.95);
+      border-bottom:1px solid rgba(180,130,50,0.15);
+      flex-shrink:0; flex-wrap:wrap;
+    ">
+      <button id="narration-toggle" onclick="toggleNarration()" style="
+        font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px;
+        background:transparent; border:1px solid rgba(140,100,40,0.35);
+        color:#806040; padding:4px 12px; border-radius:2px; cursor:pointer;
+        transition:all 0.2s; white-space:nowrap;
+      " onmouseover="this.style.color='#f0c040';this.style.borderColor='rgba(212,168,67,0.6)'"
+         onmouseout="if(!this.dataset.on){this.style.color='#806040';this.style.borderColor='rgba(140,100,40,0.35)'}">
+        🔊 NARRATION
+      </button>
+      <button id="narration-stop" onclick="stopNarration()" style="
+        display:none; font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px;
+        background:transparent; border:1px solid rgba(160,60,50,0.4);
+        color:#a04030; padding:4px 10px; border-radius:2px; cursor:pointer; transition:all 0.2s;
+      ">■ STOP</button>
+      <select id="voice-select" onchange="setVoice(this.value)" style="
+        background:rgba(25,18,8,0.9); border:1px solid rgba(140,100,40,0.3);
+        color:#b09060; font-family:'Crimson Text',serif; font-size:12px;
+        padding:3px 6px; border-radius:2px; outline:none; max-width:150px; cursor:pointer;
+      "></select>
+      <button onclick="cycleSpeed()" id="speed-btn" style="
+        font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px;
+        background:transparent; border:1px solid rgba(140,100,40,0.3);
+        color:#806040; padding:4px 9px; border-radius:2px; cursor:pointer; transition:all 0.2s;
+      " onmouseover="this.style.color='#f0c040'" onmouseout="this.style.color='#806040'">1×</button>
+      <span id="narration-status" style="font-size:11px;color:#605030;font-style:italic;font-family:'Crimson Text',serif;"></span>
+    </div>
     <div class="story-log" id="story-log">
       <div class="msg msg-system"><div class="msg-body">⚔ Open the Party Manager to forge your heroes and begin ⚔</div></div>
     </div>
@@ -1416,10 +1449,25 @@ function addMessage(type,header,body) {
   const msg=document.createElement('div');
   msg.className='msg msg-'+type;
   let html=header?'<div class="msg-header">'+header+'</div>':'';
-  html+='<div class="msg-body">'+body.replace(/\n/g,'<br>')+'</div>';
-  msg.innerHTML=html;
-  log.appendChild(msg);
-  log.scrollTop=log.scrollHeight;
+  if (type === 'dm') {
+    // Add speak button to DM messages
+    const escapedBody = body.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    html += '<div class="msg-body">' + body.replace(/\n/g,'<br>') +
+      '<button class="msg-speak-btn" onclick="toggleSpeakBtn(this, '' + escapedBody + '')" title="Read aloud">🔊</button>' +
+      '</div>';
+    msg.innerHTML = html;
+    log.appendChild(msg);
+    log.scrollTop = log.scrollHeight;
+    // Auto-narrate if enabled
+    if (narrationEnabled) {
+      setTimeout(() => speakText(body, msg.querySelector('.msg-speak-btn')), 300);
+    }
+  } else {
+    html+='<div class="msg-body">'+body.replace(/\n/g,'<br>')+'</div>';
+    msg.innerHTML=html;
+    log.appendChild(msg);
+    log.scrollTop=log.scrollHeight;
+  }
   return msg;
 }
 function addThinking() {
@@ -1453,6 +1501,152 @@ function rollDie(sides) {
   }
 }
 
+
+// ── NARRATION / TEXT-TO-SPEECH ──
+let narrationEnabled = false;
+let narrationVoice = null;
+let narrationSpeed = 1.0;
+let currentUtterance = null;
+const SPEEDS = [0.8, 1.0, 1.25, 1.5, 1.8];
+let speedIdx = 1;
+
+function initNarration() {
+  if (!window.speechSynthesis) {
+    document.getElementById('narration-bar').style.display = 'none';
+    return;
+  }
+  // Load voices — they load asynchronously
+  function loadVoices() {
+    const voices = window.speechSynthesis.getVoices();
+    const select = document.getElementById('voice-select');
+    if (!voices.length) return;
+    select.innerHTML = '';
+    // Prefer English voices, sort quality ones first
+    const english = voices.filter(v => v.lang.startsWith('en'));
+    const others = voices.filter(v => !v.lang.startsWith('en'));
+    const sorted = [...english, ...others];
+    sorted.forEach((v, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = v.name.replace('Microsoft ', '').replace(' Online (Natural)', ' ✦') + ' (' + v.lang + ')';
+      select.appendChild(opt);
+    });
+    // Pick a good default — prefer deep/male English voice for DM feel
+    const preferred = sorted.findIndex(v =>
+      v.name.toLowerCase().includes('david') ||
+      v.name.toLowerCase().includes('daniel') ||
+      v.name.toLowerCase().includes('george') ||
+      v.name.toLowerCase().includes('william') ||
+      v.name.toLowerCase().includes('neural') ||
+      v.name.toLowerCase().includes('natural')
+    );
+    const defaultIdx = preferred >= 0 ? preferred : 0;
+    select.value = defaultIdx;
+    narrationVoice = sorted[defaultIdx] || null;
+  }
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function toggleNarration() {
+  narrationEnabled = !narrationEnabled;
+  const btn = document.getElementById('narration-toggle');
+  const status = document.getElementById('narration-status');
+  if (narrationEnabled) {
+    btn.textContent = '🔊 NARRATION ON';
+    btn.style.color = '#f0c040';
+    btn.style.borderColor = 'rgba(212,168,67,0.6)';
+    btn.style.background = 'rgba(212,168,67,0.1)';
+    btn.dataset.on = '1';
+    status.textContent = 'reading aloud automatically';
+  } else {
+    btn.textContent = '🔊 NARRATION';
+    btn.style.color = '#806040';
+    btn.style.borderColor = 'rgba(140,100,40,0.35)';
+    btn.style.background = 'transparent';
+    btn.dataset.on = '';
+    status.textContent = '';
+    stopNarration();
+  }
+}
+
+function setVoice(idx) {
+  const voices = window.speechSynthesis.getVoices();
+  const english = voices.filter(v => v.lang.startsWith('en'));
+  const others = voices.filter(v => !v.lang.startsWith('en'));
+  const sorted = [...english, ...others];
+  narrationVoice = sorted[parseInt(idx)] || null;
+}
+
+function cycleSpeed() {
+  speedIdx = (speedIdx + 1) % SPEEDS.length;
+  narrationSpeed = SPEEDS[speedIdx];
+  document.getElementById('speed-btn').textContent = narrationSpeed + '×';
+  // If currently speaking, restart with new speed
+  if (window.speechSynthesis.speaking) {
+    stopNarration();
+  }
+}
+
+function speakText(text, btnEl) {
+  if (!window.speechSynthesis) return;
+  stopNarration();
+
+  // Clean text for speech — remove markdown, extra symbols
+  const clean = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/[⚔🎲📜💀🌟🔮⚓👑🗺🕯]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  if (narrationVoice) utterance.voice = narrationVoice;
+  utterance.rate = narrationSpeed;
+  utterance.pitch = 0.9;  // Slightly deeper for DM feel
+  utterance.volume = 1;
+
+  currentUtterance = utterance;
+
+  if (btnEl) {
+    btnEl.classList.add('speaking');
+    btnEl.textContent = '⏹';
+  }
+  document.getElementById('narration-stop').style.display = 'inline-block';
+
+  utterance.onend = () => {
+    currentUtterance = null;
+    if (btnEl) { btnEl.classList.remove('speaking'); btnEl.textContent = '🔊'; }
+    document.getElementById('narration-stop').style.display = 'none';
+  };
+  utterance.onerror = () => {
+    currentUtterance = null;
+    if (btnEl) { btnEl.classList.remove('speaking'); btnEl.textContent = '🔊'; }
+    document.getElementById('narration-stop').style.display = 'none';
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopNarration() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  currentUtterance = null;
+  document.getElementById('narration-stop').style.display = 'none';
+  // Reset all speak buttons
+  document.querySelectorAll('[title="Read aloud"]').forEach(b => {
+    b.classList.remove('speaking');
+    b.textContent = '🔊';
+  });
+}
+
+function toggleSpeakBtn(btn, text, event) { if(event) event.stopPropagation();
+  if (window.speechSynthesis && window.speechSynthesis.speaking && btn.classList.contains('speaking')) {
+    stopNarration();
+  } else {
+    speakText(text, btn);
+  }
+}
 
 // ── CAMPAIGN CREATOR ──
 let campaign = {
@@ -2055,6 +2249,8 @@ function closeCharPanel() {
 
 // ── BOOT ──
 (function boot() {
+  // Init narration
+  initNarration();
   // Migrate any old single-slot save
   try {
     const oldRaw = localStorage.getItem('chronicle_shadow_save');

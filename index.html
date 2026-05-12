@@ -802,6 +802,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     </div>
     <div class="top-right">
       <button class="top-btn" id="char-panel-btn" onclick="toggleCharPanel()" title="Toggle character panel">🧙 Hero</button>
+      <button class="top-btn" onclick="openCampaignFromParty()" title="Campaign settings">🗺 Campaign</button>
       <button class="top-btn" onclick="openPartyManager()">⚔ Party</button>
       <button class="top-btn" onclick="editActiveHero()">✎ Edit</button>
       <div class="session-badge" id="session-badge">SESSION I</div>
@@ -924,16 +925,19 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       </div>
     </div>
     <div>
-      <div class="panel-label">Active Quests</div>
-      <div class="quest-item">
-        <div class="quest-title">The Vale of Shadows</div>
-        <div class="quest-desc">Investigate the disappearances north of Millhaven. Reward: 500gp.</div>
-        <div class="quest-status">● IN PROGRESS</div>
+      <div class="panel-label" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Quests</span>
+        <button onclick="openAddQuest()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.35);color:#a07848;padding:2px 7px;border-radius:2px;cursor:pointer;" title="Add quest">+ ADD</button>
       </div>
-      <div class="quest-item">
-        <div class="quest-title">Elara's Warning</div>
-        <div class="quest-desc">The merchant seemed terrified. Find out what she truly knows.</div>
-        <div class="quest-status">○ DISCOVERED</div>
+      <div id="quest-list"></div>
+      <!-- Add Quest inline form -->
+      <div id="add-quest-form" style="display:none;margin-top:6px;background:rgba(42,30,12,0.9);border:1px solid rgba(180,130,50,0.3);border-radius:3px;padding:10px;">
+        <input id="quest-title-input" type="text" placeholder="Quest title..." maxlength="60" style="width:100%;background:rgba(30,20,8,0.9);border:1px solid rgba(140,100,40,0.4);color:#f0d898;font-family:'Crimson Text',serif;font-size:13px;padding:5px 8px;border-radius:2px;outline:none;margin-bottom:6px;">
+        <textarea id="quest-desc-input" placeholder="Description..." rows="2" style="width:100%;background:rgba(30,20,8,0.9);border:1px solid rgba(140,100,40,0.4);color:#f0d898;font-family:'Crimson Text',serif;font-size:13px;padding:5px 8px;border-radius:2px;outline:none;resize:none;margin-bottom:6px;"></textarea>
+        <div style="display:flex;gap:6px;">
+          <button onclick="saveNewQuest()" style="flex:1;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.4);color:#ffd040;padding:5px;border-radius:2px;cursor:pointer;">SAVE</button>
+          <button onclick="closeAddQuest()" style="font-family:'Cinzel',serif;font-size:10px;background:transparent;border:1px solid rgba(100,70,30,0.4);color:#a07848;padding:5px 10px;border-radius:2px;cursor:pointer;">✕</button>
+        </div>
       </div>
     </div>
     <div>
@@ -1297,7 +1301,9 @@ YOUR ROLE:
 - Give NPCs distinct memorable voices; build atmosphere appropriate to the tone
 - Track story continuity; always end with a clear situation or question
 
-STYLE: 2-4 paragraphs per response. Rich sensory detail. Tone as specified above.`;
+STYLE: 2-4 paragraphs per response. Rich sensory detail. Tone as specified above.
+
+${getActiveQuestContext()}`;
 }
 
 function startGame() {
@@ -1661,6 +1667,101 @@ function toggleSpeakBtn(btn, text, event) { if(event) event.stopPropagation();
   }
 }
 
+// ── QUESTS ──
+let quests = [
+  { id: 1, title: 'The Vale of Shadows', desc: 'Investigate the disappearances north of Millhaven. Reward: 500gp.', status: 'in_progress' },
+  { id: 2, title: "Elara's Warning", desc: 'The merchant seemed terrified. Find out what she truly knows.', status: 'discovered' }
+];
+let activeQuestId = 1;
+let nextQuestId = 3;
+
+const QUEST_STATUS = {
+  in_progress: { icon: '●', label: 'IN PROGRESS', color: '#6a9060' },
+  discovered:  { icon: '○', label: 'DISCOVERED',  color: '#8a7040' },
+  completed:   { icon: '✓', label: 'COMPLETED',   color: '#4a7a8a' },
+  failed:      { icon: '✗', label: 'FAILED',      color: '#8a3030' }
+};
+
+function renderQuests() {
+  const list = document.getElementById('quest-list');
+  if (!list) return;
+  if (quests.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:#605030;font-style:italic;padding:6px 0;">No quests yet.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  quests.forEach(q => {
+    const st = QUEST_STATUS[q.status] || QUEST_STATUS.discovered;
+    const div = document.createElement('div');
+    div.className = 'quest-item' + (q.id === activeQuestId ? ' quest-active' : '');
+    div.onclick = () => setActiveQuest(q.id);
+    div.innerHTML =
+      '<div class="quest-title">' + q.title + '</div>' +
+      '<div class="quest-desc">' + q.desc + '</div>' +
+      '<div class="quest-status">' +
+        '<span style="color:' + st.color + '">' + st.icon + ' ' + st.label + '</span>' +
+        '<span class="quest-del" onclick="event.stopPropagation();cycleQuestStatus(' + q.id + ')" title="Cycle status">↻</span>' +
+        '<span class="quest-del" onclick="event.stopPropagation();deleteQuest(' + q.id + ')" title="Remove quest">✕</span>' +
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function setActiveQuest(id) {
+  activeQuestId = id;
+  renderQuests();
+  const q = quests.find(q => q.id === id);
+  if (q && gameStarted) {
+    addMessage('system', null, '📜 Active quest: ' + q.title);
+  }
+}
+
+function cycleQuestStatus(id) {
+  const q = quests.find(q => q.id === id);
+  if (!q) return;
+  const statuses = ['discovered', 'in_progress', 'completed', 'failed'];
+  const idx = statuses.indexOf(q.status);
+  q.status = statuses[(idx + 1) % statuses.length];
+  renderQuests();
+  setTimeout(autoSave, 200);
+}
+
+function deleteQuest(id) {
+  quests = quests.filter(q => q.id !== id);
+  if (activeQuestId === id) activeQuestId = quests.length > 0 ? quests[0].id : null;
+  renderQuests();
+  setTimeout(autoSave, 200);
+}
+
+function openAddQuest() {
+  document.getElementById('add-quest-form').style.display = 'block';
+  document.getElementById('quest-title-input').focus();
+}
+
+function closeAddQuest() {
+  document.getElementById('add-quest-form').style.display = 'none';
+  document.getElementById('quest-title-input').value = '';
+  document.getElementById('quest-desc-input').value = '';
+}
+
+function saveNewQuest() {
+  const title = document.getElementById('quest-title-input').value.trim();
+  const desc = document.getElementById('quest-desc-input').value.trim();
+  if (!title) return;
+  const q = { id: nextQuestId++, title, desc: desc || '', status: 'discovered' };
+  quests.push(q);
+  closeAddQuest();
+  renderQuests();
+  setTimeout(autoSave, 200);
+}
+
+function getActiveQuestContext() {
+  if (!activeQuestId) return '';
+  const q = quests.find(q => q.id === activeQuestId);
+  if (!q) return '';
+  return 'ACTIVE QUEST: ' + q.title + (q.desc ? ' — ' + q.desc : '');
+}
+
 // ── CAMPAIGN CREATOR ──
 let campaign = {
   name: '',
@@ -1996,7 +2097,7 @@ function buildSaveData(campaignName) {
     campaignName: campaignName || campaign.name || currentCampaignName(),
     savedAt: new Date().toISOString(),
     party, activeHeroIdx, turnCount, gameStarted,
-    conversationHistory, campaign,
+    conversationHistory, campaign, quests, activeQuestId, nextQuestId,
     eventsLog: document.getElementById('events-log').innerHTML
   };
 }
@@ -2174,6 +2275,7 @@ function loadSaveData(data) {
   gameStarted = data.gameStarted || false;
   conversationHistory = data.conversationHistory || [];
   if (data.campaign) campaign = data.campaign;
+  if (data.quests) { quests = data.quests; activeQuestId = data.activeQuestId || null; nextQuestId = data.nextQuestId || 10; }
 
   const log = document.getElementById('story-log');
   log.innerHTML = '';
@@ -2192,6 +2294,7 @@ function loadSaveData(data) {
   renderPartyStrip();
   updateActiveHeroDisplay();
   updateSaveStatus();
+  renderQuests();
 }
 
 function newGame() {
@@ -2264,6 +2367,7 @@ function closeCharPanel() {
 (function boot() {
   // Init narration
   initNarration();
+  renderQuests();
   // Migrate any old single-slot save
   try {
     const oldRaw = localStorage.getItem('chronicle_shadow_save');

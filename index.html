@@ -450,6 +450,27 @@ html, body {
   border: 1px solid rgba(212,168,67,0.4); padding: 1px 7px;
   border-radius: 2px; flex-shrink: 0; margin-top: 2px;
 }
+
+/* ── HP TRACKER ── */
+.hp-adjuster { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.hp-adj-btn {
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+  width: 26px; height: 26px; border-radius: 2px; cursor: pointer;
+  transition: all 0.15s; background: rgba(38,27,11,0.9); border: 1px solid rgba(140,100,40,0.4);
+  color: #c0a060; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.hp-adj-btn.dmg { border-color: rgba(160,60,50,0.5); color: #c05040; }
+.hp-adj-btn.dmg:hover { background: rgba(100,30,20,0.5); border-color: rgba(200,70,60,0.7); color: #f05040; }
+.hp-adj-btn.heal { border-color: rgba(60,140,60,0.5); color: #60a060; }
+.hp-adj-btn.heal:hover { background: rgba(20,80,20,0.4); border-color: rgba(70,180,70,0.7); color: #70d070; }
+.hp-adj-input {
+  width: 38px; text-align: center; background: rgba(38,27,11,0.9);
+  border: 1px solid rgba(140,100,40,0.4); color: #f0d898;
+  font-family: 'Cinzel', serif; font-size: 12px; padding: 3px 4px; border-radius: 2px; outline: none;
+}
+.hp-adj-input:focus { border-color: rgba(212,168,67,0.6); }
+.hp-change-flash { animation: hpFlash 0.6s ease; }
+@keyframes hpFlash { 0%{opacity:1} 30%{opacity:0.3} 100%{opacity:1} }
 </style>
 
   <!-- Tell Google Sites to resize the iframe to fit content -->
@@ -945,7 +966,13 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
             <div class="hp-label"><span>Hit Points</span><span id="display-hp">— / —</span></div>
             <div class="hp-bar"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
           </div>
-          <div class="hp-label" style="margin-bottom:6px;"><span style="font-size:11px;color:#8a7050;">Armour Class</span><span id="display-ac" style="font-size:11px;color:#8a7050;">—</span></div>
+          <div class="hp-adjuster">
+            <button class="hp-adj-btn dmg" onclick="adjustHP(-1)" title="Apply damage">−</button>
+            <input class="hp-adj-input" id="hp-adj-amount" type="number" value="1" min="1" max="999">
+            <button class="hp-adj-btn heal" onclick="adjustHP(1)" title="Apply healing">+</button>
+            <span style="font-size:10px;color:#806040;font-family:'Cinzel',serif;letter-spacing:0.5px;margin-left:2px;">DMG/HEAL</span>
+          </div>
+          <div class="hp-label" style="margin-bottom:6px;margin-top:6px;"><span style="font-size:11px;color:#8a7050;">Armour Class</span><span id="display-ac" style="font-size:11px;color:#8a7050;">—</span></div>
           <div id="display-resources" style="font-size:11px;color:#7a6040;font-style:italic;"></div>
         </div>
       </div>
@@ -1597,6 +1624,8 @@ function addMessage(type, header, body) {
     // Parse and show DM options
     const dmOpts = parseDMOptions(body);
     showDMOptions(dmOpts);
+    // Auto-detect HP changes from DM text
+    setTimeout(() => parseHPChanges(body), 100);
   } else {
     msg.appendChild(bodyEl);
     log.appendChild(msg);
@@ -2145,6 +2174,101 @@ function clearDMOptions() {
   const quickArea = document.getElementById('quick-actions-area');
   if (area) { area.style.display = 'none'; area.innerHTML = ''; }
   if (quickArea) quickArea.style.display = 'flex';
+}
+
+// ── HP TRACKER ──
+function adjustHP(direction) {
+  if (!party.length || activeHeroIdx >= party.length) return;
+  const amount = Math.max(1, parseInt(document.getElementById('hp-adj-amount').value) || 1);
+  const hero = party[activeHeroIdx];
+  const oldHP = hero.hpCur;
+
+  if (direction < 0) {
+    // Damage
+    hero.hpCur = Math.max(0, hero.hpCur - amount);
+    const actual = oldHP - hero.hpCur;
+    if (gameStarted) {
+      if (hero.hpCur === 0) {
+        addMessage('system', null, `💀 ${hero.name} takes ${actual} damage and falls to 0 HP — DOWN!`);
+      } else {
+        addMessage('system', null, `🩸 ${hero.name} takes ${actual} damage. HP: ${hero.hpCur}/${hero.hpMax}`);
+      }
+    }
+  } else {
+    // Heal
+    hero.hpCur = Math.min(hero.hpMax, hero.hpCur + amount);
+    const actual = hero.hpCur - oldHP;
+    if (gameStarted && actual > 0) {
+      addMessage('system', null, `💚 ${hero.name} recovers ${actual} HP. HP: ${hero.hpCur}/${hero.hpMax}`);
+    }
+  }
+
+  updateActiveHeroDisplay();
+  renderPartyStrip();
+  // Flash the HP display
+  const hpEl = document.getElementById('display-hp');
+  if (hpEl) {
+    hpEl.classList.remove('hp-change-flash');
+    void hpEl.offsetWidth; // reflow
+    hpEl.classList.add('hp-change-flash');
+  }
+  setTimeout(autoSave, 300);
+}
+
+function parseHPChanges(dmText) {
+  if (!party.length) return;
+  const hero = party[activeHeroIdx];
+
+  // Look for damage patterns: "X damage", "takes X", "loses X hit points"
+  const dmgPatterns = [
+    /(?:takes?|suffers?|receives?|deals?)\s+(\d+)\s+(?:points?\s+of\s+)?damage/gi,
+    /(\d+)\s+(?:points?\s+of\s+)?damage\s+(?:to|on|against)\s+(?:you|' + hero.name + ')/gi,
+    /you\s+(?:lose|lost)\s+(\d+)\s+(?:hit\s+)?(?:points?|hp)/gi,
+  ];
+
+  // Look for healing: "heal X", "regain X", "restore X hit points"
+  const healPatterns = [
+    /(?:heal|heals?|regains?|restores?)\s+(\d+)\s+(?:hit\s+)?(?:points?|hp)/gi,
+    /you\s+(?:recover|regain|restore)\s+(\d+)\s+(?:hit\s+)?(?:points?|hp)/gi,
+  ];
+
+  let totalDmg = 0;
+  let totalHeal = 0;
+
+  dmgPatterns.forEach(p => {
+    p.lastIndex = 0;
+    let m;
+    while ((m = p.exec(dmText)) !== null) {
+      totalDmg += parseInt(m[1]) || 0;
+    }
+  });
+
+  healPatterns.forEach(p => {
+    p.lastIndex = 0;
+    let m;
+    while ((m = p.exec(dmText)) !== null) {
+      totalHeal += parseInt(m[1]) || 0;
+    }
+  });
+
+  if (totalDmg > 0 && totalHeal === 0) {
+    const oldHP = hero.hpCur;
+    hero.hpCur = Math.max(0, hero.hpCur - totalDmg);
+    updateActiveHeroDisplay();
+    renderPartyStrip();
+    if (hero.hpCur === 0) {
+      addMessage('system', null, `💀 ${hero.name} takes ${totalDmg} damage — DOWN! (Auto-detected)`);
+    } else {
+      addMessage('system', null, `🩸 ${hero.name} takes ${totalDmg} damage → HP: ${hero.hpCur}/${hero.hpMax} (Auto-detected)`);
+    }
+    setTimeout(autoSave, 300);
+  } else if (totalHeal > 0 && totalDmg === 0) {
+    hero.hpCur = Math.min(hero.hpMax, hero.hpCur + totalHeal);
+    updateActiveHeroDisplay();
+    renderPartyStrip();
+    addMessage('system', null, `💚 ${hero.name} heals ${totalHeal} HP → ${hero.hpCur}/${hero.hpMax} (Auto-detected)`);
+    setTimeout(autoSave, 300);
+  }
 }
 
 // ── SWITCH HERO (multi-party turn management) ──

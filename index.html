@@ -429,6 +429,27 @@ html, body {
   font-size: 13px; padding: 0 3px; transition: color 0.15s;
 }
 .remove-item-btn:hover { color: #e04040; }
+
+/* ── DM OPTION BUTTONS ── */
+.dm-options { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.dm-option-btn {
+  font-family: 'Crimson Text', serif; font-size: 14px; line-height: 1.4;
+  text-align: left; padding: 9px 14px; border-radius: 2px; cursor: pointer;
+  transition: all 0.18s; background: rgba(38,27,11,0.85);
+  border: 1px solid rgba(160,120,50,0.4); color: #d0aa70;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.dm-option-btn:hover {
+  background: rgba(65,48,18,0.95); border-color: rgba(212,168,67,0.65);
+  color: #f0d080; transform: translateX(3px);
+}
+.dm-option-btn:active { transform: translateX(1px); }
+.dm-option-label {
+  font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+  color: #ffd040; background: rgba(212,168,67,0.12);
+  border: 1px solid rgba(212,168,67,0.4); padding: 1px 7px;
+  border-radius: 2px; flex-shrink: 0; margin-top: 2px;
+}
 </style>
 
   <!-- Tell Google Sites to resize the iframe to fit content -->
@@ -976,7 +997,9 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
           rows="2" onkeydown="handleKey(event)"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendAction()">TAKE ACTION ⚔</button>
       </div>
-      <div class="quick-actions">
+      <!-- DM-generated option buttons -->
+      <div id="dm-options-area" style="display:none;margin-top:10px;"></div>
+      <div class="quick-actions" id="quick-actions-area">
         <button class="quick-btn" onclick="quickAction('I investigate my surroundings carefully.')">Investigate</button>
         <button class="quick-btn" onclick="quickAction('I ask the nearest person what they know.')">Ask NPC</button>
         <button class="quick-btn" onclick="quickAction('I ready a weapon or spell for combat.')">Combat Stance</button>
@@ -1369,13 +1392,21 @@ THE PARTY (${party.length} hero${party.length>1?'es':''}):\n${partyDesc}
 
 The ACTIVE hero is indicated in player messages. When multiple heroes are present, give each a distinct presence and track their individual resources.
 
+TURN STRUCTURE — CRITICAL:
+- This is a solo-player game controlling ${party.length > 1 ? 'a party of ' + party.length + ' heroes' : 'one hero'}. The player controls ALL heroes but takes ONE hero's turn at a time.
+- The ACTIVE hero (marked [ACTIVE] above) is whose turn it currently is. Address them directly.
+- When a dice roll or action is needed, ask for it from the ACTIVE hero ONLY — never ask multiple heroes to roll simultaneously in the same message.
+- After the active hero acts, you may briefly narrate what the other party members do automatically (as NPCs would), THEN ask what the active hero does next — OR tell the player to switch to another hero if their input is needed.
+- In combat: run initiative order one character at a time. Ask for ONE roll per message. Wait for the result before proceeding.
+- Never ask "roll for X, Y and Z all at once" — always one roll, one hero, one action per exchange.
+
 YOUR ROLE:
 - Narrate in 2nd person for the active hero; reference companions by name
 - Enforce D&D 5E rules using each character's actual modifiers
-- When dice are needed, specify exactly what to roll and which character rolls it
+- When dice are needed: one roll at a time, state the die, the modifier, and the DC if applicable
 - Match the tone and setting above consistently throughout the campaign
 - Give NPCs distinct memorable voices; build atmosphere appropriate to the tone
-- Track story continuity; always end with a clear situation or question
+- Track story continuity; always end with a clear prompt for the active hero
 
 STYLE: 2-4 paragraphs per response. Rich sensory detail. Tone as specified above.
 
@@ -1492,7 +1523,11 @@ async function sendAction() {
   btn.disabled=true; input.value='';
   turnCount++;
   document.getElementById('turn-count').textContent='TURN '+turnCount;
-  const playerMsg = party.length > 1 ? `[${active.name}] ${text}` : text;
+  const otherHeroes = party.filter((_,i) => i !== activeHeroIdx).map(h => h.name).join(', ');
+  const playerMsg = party.length > 1
+    ? `[ACTIVE HERO: ${active.name} the ${active.race} ${active.charClass}]${otherHeroes ? ' [OTHER PARTY MEMBERS: ' + otherHeroes + ']' : ''} ${text}`
+    : text;
+  clearDMOptions();
   addMessage('player', active.name.toUpperCase(), text);
   conversationHistory.push({role:'user', content: playerMsg});
   const thinkEl = addThinking();
@@ -1559,6 +1594,9 @@ function addMessage(type, header, body) {
     if (narrationEnabled) {
       setTimeout(() => speakText(body, speakBtn), 300);
     }
+    // Parse and show DM options
+    const dmOpts = parseDMOptions(body);
+    showDMOptions(dmOpts);
   } else {
     msg.appendChild(bodyEl);
     log.appendChild(msg);
@@ -2031,6 +2069,106 @@ function generateCharacterName() {
     inp.style.borderColor = '';
     inp.style.color = '';
   }, 600);
+}
+
+// ── DM OPTION PARSER ──
+function parseDMOptions(text) {
+  const options = [];
+  const lines = text.split('\n');
+
+  lines.forEach(line => {
+    const clean = line.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+
+    // Match: A) text  A: text  (A) text  Option A: text
+    let m = clean.match(/^\(?([A-Ca-c])\)?[.):\s]+(.+)/) ||
+            clean.match(/^Option\s+([A-Ca-c1-3])[.:\s]+(.+)/i) ||
+            clean.match(/^([1-3])[.):]\s+(.+)/);
+
+    if (m) {
+      const label = m[1].toUpperCase();
+      const optText = m[2].trim();
+      if (optText && optText.length > 3 && !options.some(o => o.label === label)) {
+        options.push({ label, text: optText });
+      }
+    }
+  });
+
+  return options.slice(0, 4);
+}
+
+function showDMOptions(options) {
+  const area = document.getElementById('dm-options-area');
+  const quickArea = document.getElementById('quick-actions-area');
+  if (!area) return;
+
+  if (options.length === 0) {
+    area.style.display = 'none';
+    area.innerHTML = '';
+    if (quickArea) quickArea.style.display = 'flex';
+    return;
+  }
+
+  area.innerHTML = '';
+  area.style.display = 'block';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dm-options';
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'dm-option-btn';
+
+    const label = document.createElement('span');
+    label.className = 'dm-option-label';
+    label.textContent = opt.label;
+
+    const txt = document.createElement('span');
+    txt.textContent = opt.text;
+
+    btn.appendChild(label);
+    btn.appendChild(txt);
+    btn.onclick = () => {
+      quickAction(opt.text);
+      clearDMOptions();
+    };
+    wrap.appendChild(btn);
+  });
+
+  area.appendChild(wrap);
+
+  // Hide default quick actions when DM options are shown
+  if (quickArea) quickArea.style.display = 'none';
+}
+
+function clearDMOptions() {
+  const area = document.getElementById('dm-options-area');
+  const quickArea = document.getElementById('quick-actions-area');
+  if (area) { area.style.display = 'none'; area.innerHTML = ''; }
+  if (quickArea) quickArea.style.display = 'flex';
+}
+
+// ── SWITCH HERO (multi-party turn management) ──
+function updateSwitchHeroBtn() {
+  const area = document.getElementById('quick-actions-area');
+  if (!area) return;
+  // Remove any existing switch btn
+  const existing = document.getElementById('switch-hero-btn');
+  if (existing) existing.remove();
+
+  if (party.length > 1 && gameStarted) {
+    const nextIdx = (activeHeroIdx + 1) % party.length;
+    const nextHero = party[nextIdx];
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.id = 'switch-hero-btn';
+    btn.style.cssText = 'border-color:rgba(212,168,67,0.5);color:#ffd040;';
+    btn.textContent = '⇄ Switch to ' + nextHero.name;
+    btn.onclick = () => {
+      setActiveHero(nextIdx);
+      closeCharPanel();
+    };
+    area.appendChild(btn);
+  }
 }
 
 // ── ITEM PICKER ──

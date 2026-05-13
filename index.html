@@ -929,6 +929,48 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
   </div>
 </div>
 
+<!-- CAMPAIGN DEBRIEF MODAL -->
+<div class="modal-overlay hidden" id="debrief-overlay">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-title">⭐ CAMPAIGN COMPLETE</div>
+    <div class="modal-sub" id="debrief-campaign-name">The adventure comes to a close...</div>
+
+    <!-- Step 1: Generating -->
+    <div id="debrief-step-loading" style="text-align:center;padding:30px;">
+      <div style="font-size:32px;animation:spin 1.5s linear infinite;display:inline-block;">⚔</div>
+      <p style="font-family:'Cinzel',serif;font-size:12px;color:#a07848;letter-spacing:1px;margin-top:12px;" id="debrief-loading-text">THE ANCIENT VOICE REFLECTS ON YOUR DEEDS...</p>
+    </div>
+
+    <!-- Step 2: Results -->
+    <div id="debrief-step-results" style="display:none;">
+
+      <!-- Story summary -->
+      <div class="modal-section">
+        <div class="modal-section-title">Campaign Summary</div>
+        <div id="debrief-summary" style="font-size:14px;color:#d0aa70;line-height:1.7;font-style:italic;background:rgba(38,27,11,0.7);border-left:3px solid rgba(212,168,67,0.4);padding:12px 16px;border-radius:0 3px 3px 0;"></div>
+      </div>
+
+      <!-- Hero evaluations -->
+      <div class="modal-section">
+        <div class="modal-section-title">Hero Evaluations</div>
+        <div id="debrief-heroes" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
+      <!-- Apply level-ups -->
+      <div class="modal-section" id="debrief-levelup-section" style="display:none;">
+        <div class="modal-section-title">Apply Level Ups</div>
+        <div id="debrief-levelup-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+        <button class="begin-btn" onclick="applyLevelUps()" style="font-size:13px;">⬆ APPLY SELECTED LEVEL UPS</button>
+      </div>
+    </div>
+
+    <div class="modal-btn-row" style="margin-top:16px;">
+      <button class="cancel-btn" onclick="closeDebrief()">Close</button>
+      <button class="begin-btn" id="debrief-new-btn" style="display:none;" onclick="closeDebrief();newGame();">⚔ Start New Campaign</button>
+    </div>
+  </div>
+</div>
+
 <!-- DICE ANIM -->
 <div id="roll-anim"><div class="roll-pop" id="roll-pop-val"></div></div>
 <div class="parchment-bg"></div>
@@ -1106,6 +1148,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     <button class="save-btn primary" onclick="openSavesManager()">&#x1F4C2; Saves</button>
     <button class="save-btn primary" onclick="quickSave()">&#x1F4BE; Quick Save</button>
     <label class="save-btn primary" style="cursor:pointer;display:inline-block;">&#x2B06; Import File<input type="file" accept=".json" onchange="importSaveFile(event)" style="display:none"></label>
+    <button class="save-btn primary" onclick="openCampaignDebrief()" id="debrief-btn" style="display:none;">&#x2605; End Campaign</button>
     <button class="save-btn danger" onclick="newGame()">&#x2715; New Game</button>
     <div class="save-status" id="save-status">No save found</div>
   </div>
@@ -1463,6 +1506,7 @@ function startGame() {
   document.getElementById('turn-count').textContent = 'TURN 1';
   const names = party.map(h=>h.name).join(', ');
   addMessage('system', null, `⚔ ${names} enter${party.length===1?'s':''} the realm... ⚔`);
+  updateDebriefBtn();
   const active = party[activeHeroIdx];
 
   // Check if we have an imported session to continue from
@@ -2402,6 +2446,295 @@ function parseHPChanges(dmText) {
   }
 }
 
+// ── CAMPAIGN DEBRIEF & LEVEL UP ──
+
+// D&D 5E level-up benefits by class
+const LEVEL_BENEFITS = {
+  Barbarian: {
+    features: {2:'Reckless Attack, Danger Sense',3:'Primal Path subclass',4:'Ability Score Improvement',5:'Extra Attack, Fast Movement',6:'Path Feature',7:'Feral Instinct',8:'Ability Score Improvement',9:'Brutal Critical (1 die)',10:'Path Feature',11:'Relentless Rage',12:'Ability Score Improvement'},
+    hpDie: 12, hpStat: 'CON'
+  },
+  Bard: {
+    features: {2:'Jack of All Trades, Song of Rest',3:'Bard College subclass, Expertise',4:'Ability Score Improvement',5:'Bardic Inspiration d8, Font of Inspiration',6:'Countercharm, College Feature',7:'—',8:'Ability Score Improvement',9:'Song of Rest d8',10:'Magical Secrets, Expertise, Bardic Inspiration d10'},
+    hpDie: 8, hpStat: 'CON', spellcaster: true
+  },
+  Cleric: {
+    features: {2:'Channel Divinity (1/rest), Divine Domain Feature',3:'—',4:'Ability Score Improvement',5:'Destroy Undead (CR 1/2)',6:'Channel Divinity (2/rest), Divine Domain Feature',7:'Divine Smite',8:'Ability Score Improvement, Destroy Undead (CR 1), Divine Domain Feature',9:'—',10:'Divine Intervention'},
+    hpDie: 8, hpStat: 'CON', spellcaster: true
+  },
+  Druid: {
+    features: {2:'Wild Shape, Druid Circle subclass',3:'—',4:'Wild Shape improvement, Ability Score Improvement',5:'—',6:'Druid Circle Feature',7:'—',8:'Wild Shape improvement, Ability Score Improvement',9:'—',10:'Druid Circle Feature'},
+    hpDie: 8, hpStat: 'CON', spellcaster: true
+  },
+  Fighter: {
+    features: {2:'Action Surge (1/rest)',3:'Martial Archetype subclass',4:'Ability Score Improvement',5:'Extra Attack',6:'Ability Score Improvement',7:'Martial Archetype Feature',8:'Ability Score Improvement',9:'Indomitable (1/rest)',10:'Martial Archetype Feature',11:'Extra Attack (2)'},
+    hpDie: 10, hpStat: 'CON'
+  },
+  Monk: {
+    features: {2:'Ki, Unarmored Movement',3:'Monastic Tradition subclass, Deflect Missiles',4:'Slow Fall, Ability Score Improvement',5:'Extra Attack, Stunning Strike',6:'Ki-Empowered Strikes, Tradition Feature',7:'Evasion, Stillness of Mind',8:'Ability Score Improvement',9:'Unarmored Movement improvement',10:'Purity of Body'},
+    hpDie: 8, hpStat: 'CON'
+  },
+  Paladin: {
+    features: {2:'Divine Smite, Fighting Style, Spellcasting',3:'Divine Health, Sacred Oath subclass',4:'Ability Score Improvement',5:'Extra Attack',6:'Aura of Protection',7:'Sacred Oath Feature',8:'Ability Score Improvement',9:'—',10:'Aura of Courage'},
+    hpDie: 10, hpStat: 'CON', spellcaster: true
+  },
+  Ranger: {
+    features: {2:'Fighting Style, Spellcasting, Primeval Awareness',3:'Ranger Archetype subclass, Primeval Awareness',4:'Ability Score Improvement',5:'Extra Attack',6:'Favoured Enemy and Natural Explorer improvements',7:'Ranger Archetype Feature',8:'Lands Stride, Ability Score Improvement',9:'—',10:'Natural Explorer improvement, Hide in Plain Sight'},
+    hpDie: 10, hpStat: 'CON', spellcaster: true
+  },
+  Rogue: {
+    features: {2:'Cunning Action',3:'Roguish Archetype subclass',4:'Ability Score Improvement',5:'Uncanny Dodge',6:'Expertise (2 more skills)',7:'Evasion',8:'Ability Score Improvement',9:'—',10:'Ability Score Improvement'},
+    hpDie: 8, hpStat: 'DEX'
+  },
+  Sorcerer: {
+    features: {2:'Font of Magic, Sorcery Points',3:'Metamagic (2)',4:'Ability Score Improvement',5:'—',6:'Sorcerous Origin Feature',7:'—',8:'Ability Score Improvement',9:'—',10:'Metamagic (3)'},
+    hpDie: 6, hpStat: 'CON', spellcaster: true
+  },
+  Warlock: {
+    features: {2:'Eldritch Invocations (2)',3:'Pact Boon',4:'Ability Score Improvement',5:'—',6:'Otherworldly Patron Feature',7:'—',8:'Ability Score Improvement',9:'—',10:'Otherworldly Patron Feature'},
+    hpDie: 8, hpStat: 'CON', spellcaster: true
+  },
+  Wizard: {
+    features: {2:'Arcane Tradition subclass',3:'—',4:'Ability Score Improvement',5:'—',6:'Arcane Tradition Feature',7:'—',8:'Ability Score Improvement',9:'—',10:'Arcane Tradition Feature'},
+    hpDie: 6, hpStat: 'CON', spellcaster: true
+  }
+};
+
+const PROFICIENCY_BONUS = [0,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6];
+
+let debriefData = null;
+let levelUpChoices = {};
+
+function openCampaignDebrief() {
+  if (!gameStarted || !party.length) return;
+  debriefData = null;
+  levelUpChoices = {};
+  document.getElementById('debrief-campaign-name').textContent = campaign.name || 'The adventure comes to a close...';
+  document.getElementById('debrief-step-loading').style.display = 'block';
+  document.getElementById('debrief-step-results').style.display = 'none';
+  document.getElementById('debrief-new-btn').style.display = 'none';
+  document.getElementById('debrief-overlay').classList.remove('hidden');
+
+  const msgs = ['THE ANCIENT VOICE REFLECTS ON YOUR DEEDS...', 'TALLYING VICTORIES AND DEFEATS...', 'WEIGHING GROWTH AND EXPERIENCE...'];
+  let mi = 0;
+  const mt = setInterval(() => {
+    mi = (mi+1) % msgs.length;
+    const el = document.getElementById('debrief-loading-text');
+    if (el) el.textContent = msgs[mi];
+  }, 1800);
+
+  generateDebrief().then(() => {
+    clearInterval(mt);
+    document.getElementById('debrief-step-loading').style.display = 'none';
+    document.getElementById('debrief-step-results').style.display = 'block';
+    document.getElementById('debrief-new-btn').style.display = 'inline-block';
+  }).catch(err => {
+    clearInterval(mt);
+    document.getElementById('debrief-loading-text').textContent = 'Could not generate debrief. ' + err.message;
+  });
+}
+
+async function generateDebrief() {
+  const partyDesc = party.map(h =>
+    h.name + ' (Lvl ' + h.level + ' ' + h.race + ' ' + h.charClass + ', HP ' + h.hpCur + '/' + h.hpMax + ')'
+  ).join(', ');
+
+  const questDesc = quests.map(q =>
+    q.title + ' [' + q.status.toUpperCase() + ']'
+  ).join(', ') || 'No quests tracked';
+
+  const storyLength = conversationHistory.length;
+  const storySnippet = conversationHistory.slice(-6)
+    .filter(m => m.role === 'assistant')
+    .map(m => m.content.substring(0, 200))
+    .join(' ... ');
+
+  const prompt = `You are evaluating a completed D&D 5E campaign session for a debrief.
+
+CAMPAIGN: ${campaign.name || 'Unnamed Campaign'}
+SETTING: ${campaign.setting || 'classic_fantasy'}
+PARTY: ${partyDesc}
+QUESTS: ${questDesc}
+SESSION LENGTH: ${storyLength} exchanges
+STORY EXCERPT (recent): ${storySnippet}
+
+Respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "summary": "2-3 sentence dramatic summary of the campaign",
+  "heroes": [
+    {
+      "name": "hero name",
+      "levelUp": true or false,
+      "reason": "1-2 sentences explaining why they should or should not level up",
+      "highlight": "their most notable deed or moment this session",
+      "xpNote": "flavourful XP/growth note"
+    }
+  ]
+}`;
+
+  const geminiContents = [
+    { role: 'user', parts: [{ text: prompt }] }
+  ];
+
+  const response = await fetch(callAI_url(), {
+    method: 'POST',
+    headers: callAI_headers(),
+    body: JSON.stringify({
+      contents: geminiContents,
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
+    })
+  });
+
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message);
+
+  let raw = data.candidates[0].content.parts[0].text.trim();
+  raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
+  debriefData = JSON.parse(raw);
+
+  renderDebrief();
+}
+
+function renderDebrief() {
+  if (!debriefData) return;
+
+  document.getElementById('debrief-summary').textContent = debriefData.summary || '';
+
+  const heroesEl = document.getElementById('debrief-heroes');
+  heroesEl.innerHTML = '';
+  levelUpChoices = {};
+
+  const levelUpsAvailable = debriefData.heroes && debriefData.heroes.some(h => h.levelUp);
+
+  debriefData.heroes && debriefData.heroes.forEach(heroData => {
+    const hero = party.find(h => h.name === heroData.name);
+    const currentLevel = hero ? hero.level : '?';
+    const nextLevel = hero ? hero.level + 1 : '?';
+    const classBenefits = hero ? LEVEL_BENEFITS[hero.charClass] : null;
+    const nextFeature = classBenefits && classBenefits.features[nextLevel]
+      ? classBenefits.features[nextLevel]
+      : 'New capabilities and power';
+    const hpGain = classBenefits
+      ? 'Gain ' + classBenefits.hpDie + ' + ' + hero.charClass + ' (' + classBenefits.hpStat + ' modifier) HP'
+      : 'Gain additional HP';
+    const newProf = PROFICIENCY_BONUS[nextLevel] > PROFICIENCY_BONUS[currentLevel]
+      ? ' Proficiency bonus increases to +' + PROFICIENCY_BONUS[nextLevel] + '.' : '';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:rgba(38,27,11,0.85);border:1px solid rgba(160,120,50,' + (heroData.levelUp ? '0.6' : '0.3') + ');border-radius:3px;padding:14px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;';
+    header.innerHTML =
+      '<span style="font-size:20px;">' + (hero ? hero.portrait : '🧙') + '</span>' +
+      '<div style="flex:1;">' +
+        '<div style="font-family:Cinzel,serif;font-size:13px;color:#ffd040;">' + heroData.name + '</div>' +
+        '<div style="font-size:11px;color:#a07848;">' + (hero ? 'Level ' + currentLevel + ' ' + hero.charClass : '') + '</div>' +
+      '</div>' +
+      (heroData.levelUp
+        ? '<div style="font-family:Cinzel,serif;font-size:11px;color:#ffd040;background:rgba(212,168,67,0.15);border:1px solid rgba(212,168,67,0.5);padding:3px 10px;border-radius:2px;">⬆ LEVEL UP</div>'
+        : '<div style="font-family:Cinzel,serif;font-size:11px;color:#607050;border:1px solid rgba(80,100,60,0.3);padding:3px 10px;border-radius:2px;">Continue</div>');
+    card.appendChild(header);
+
+    // Highlight
+    const highlight = document.createElement('div');
+    highlight.style.cssText = 'font-size:13px;color:#c0a060;font-style:italic;margin-bottom:6px;';
+    highlight.textContent = '"' + (heroData.highlight || '') + '"';
+    card.appendChild(highlight);
+
+    // Reason
+    const reason = document.createElement('div');
+    reason.style.cssText = 'font-size:13px;color:#b09070;margin-bottom:8px;';
+    reason.textContent = heroData.reason || '';
+    card.appendChild(reason);
+
+    // Level up details
+    if (heroData.levelUp && hero && nextLevel <= 20) {
+      const details = document.createElement('div');
+      details.style.cssText = 'background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.2);border-radius:2px;padding:10px 12px;margin-top:6px;';
+      details.innerHTML =
+        '<div style="font-family:Cinzel,serif;font-size:10px;color:#a07848;letter-spacing:1px;margin-bottom:6px;">LEVEL ' + currentLevel + ' → ' + nextLevel + ' BENEFITS</div>' +
+        '<div style="font-size:12px;color:#d0aa70;margin-bottom:4px;">❤ ' + hpGain + (newProf ? '<br>📈' + newProf : '') + '</div>' +
+        (nextFeature !== '—' ? '<div style="font-size:12px;color:#d0aa70;margin-bottom:4px;">✦ ' + nextFeature + '</div>' : '') +
+        (classBenefits && classBenefits.spellcaster ? '<div style="font-size:12px;color:#90a0d0;">📖 New spell slot and spells available to learn</div>' : '');
+      card.appendChild(details);
+      levelUpChoices[heroData.name] = true;
+    }
+
+    // XP note
+    if (heroData.xpNote) {
+      const xp = document.createElement('div');
+      xp.style.cssText = 'font-size:11px;color:#706040;font-style:italic;margin-top:6px;';
+      xp.textContent = heroData.xpNote;
+      card.appendChild(xp);
+    }
+
+    heroesEl.appendChild(card);
+  });
+
+  // Show apply button if any level ups
+  if (levelUpsAvailable) {
+    document.getElementById('debrief-levelup-section').style.display = 'block';
+    const list = document.getElementById('debrief-levelup-list');
+    list.innerHTML = '';
+    Object.keys(levelUpChoices).forEach(name => {
+      const hero = party.find(h => h.name === name);
+      if (!hero) return;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 10px;background:rgba(42,30,12,0.7);border:1px solid rgba(140,100,40,0.3);border-radius:2px;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = true; cb.id = 'lu-' + name;
+      cb.style.cursor = 'pointer';
+      const label = document.createElement('label');
+      label.htmlFor = 'lu-' + name;
+      label.style.cssText = 'font-family:Cinzel,serif;font-size:12px;color:#d0aa70;cursor:pointer;flex:1;';
+      label.textContent = hero.portrait + ' ' + name + '  Lvl ' + hero.level + ' → ' + (hero.level + 1);
+      row.appendChild(cb);
+      row.appendChild(label);
+      list.appendChild(row);
+    });
+  }
+}
+
+function applyLevelUps() {
+  let applied = [];
+  Object.keys(levelUpChoices).forEach(name => {
+    const cb = document.getElementById('lu-' + name);
+    if (!cb || !cb.checked) return;
+    const hero = party.find(h => h.name === name);
+    if (!hero || hero.level >= 20) return;
+    const classBenefits = LEVEL_BENEFITS[hero.charClass];
+    const hpDie = classBenefits ? classBenefits.hpDie : 8;
+    const conMod = Math.floor((hero.stats.CON - 10) / 2);
+    const hpGain = Math.max(1, Math.floor(hpDie / 2) + 1 + conMod); // average roll
+    hero.level += 1;
+    hero.hpMax += hpGain;
+    hero.hpCur += hpGain; // heal on level up
+    applied.push(name + ' → Level ' + hero.level + ' (+'+ hpGain +' HP)');
+  });
+
+  if (applied.length > 0) {
+    renderPartyStrip();
+    updateActiveHeroDisplay();
+    renderPartyManager && renderPartyManager();
+    addMessage('system', null, '⭐ Level Up! ' + applied.join(', '));
+    showToast('Level ups applied!');
+    setTimeout(autoSave, 400);
+  }
+
+  closeDebrief();
+}
+
+function closeDebrief() {
+  document.getElementById('debrief-overlay').classList.add('hidden');
+}
+
+// Show End Campaign button once game has started
+function updateDebriefBtn() {
+  const btn = document.getElementById('debrief-btn');
+  if (btn) btn.style.display = gameStarted && party.length > 0 ? 'inline-block' : 'none';
+}
+
 // ── SWITCH HERO (multi-party turn management) ──
 function updateSwitchHeroBtn() {
   const area = document.getElementById('quick-actions-area');
@@ -3286,6 +3619,7 @@ function loadSaveData(data) {
     }
   });
   addMessage('system', null, '📜 Session resumed — the story continues...');
+  updateDebriefBtn();
 
   if (data.eventsLog) document.getElementById('events-log').innerHTML = data.eventsLog;
   document.getElementById('turn-count').textContent = 'TURN ' + turnCount;

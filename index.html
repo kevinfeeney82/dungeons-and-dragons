@@ -1344,7 +1344,6 @@ function savePartySettings() {
   if (keyInput && !keyInput.startsWith('AIza')) { err.textContent = 'Key should start with AIza.'; return; }
   if (keyInput) apiKey = keyInput;
   if (!WORKER_URL && !apiKey) { err.textContent = 'Please enter your Gemini API key.'; return; }
-  if (WORKER_URL) apiKey = '__worker__'; // Mark as using worker
   if (party.length === 0) { err.textContent = 'Add at least one hero before beginning.'; return; }
   closePartyManager();
   renderPartyStrip();
@@ -1611,8 +1610,7 @@ function quickAction(t) { document.getElementById('player-input').value=t; sendA
 
 async function sendAction() {
   if (!gameStarted||party.length===0) { openPartyManager(); return; }
-  if (!WORKER_URL && !apiKey) { openPartyManager(); return; }
-  if (!WORKER_URL && apiKey === '__worker__') { openPartyManager(); return; }
+  if (!WORKER_URL && (!apiKey || apiKey === '__worker__')) { openPartyManager(); return; }
   const input = document.getElementById('player-input');
   const text = input.value.trim();
   if (!text) return;

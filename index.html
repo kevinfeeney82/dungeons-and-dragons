@@ -401,6 +401,34 @@ html, body {
 .hook-title { font-family: 'Cinzel', serif; font-size: 12px; color: #f0c830; margin-bottom: 3px; }
 .hook-desc { font-size: 12px; color: #c89848; line-height: 1.4; font-style: italic; }
 .hook-item.selected .hook-title { color: #ffd040; }
+
+/* ── ITEM PICKER ── */
+.item-tab {
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px;
+  padding: 5px 12px; border-radius: 2px; cursor: pointer; transition: all 0.15s;
+  background: rgba(42,30,12,0.8); border: 1px solid rgba(140,100,40,0.4); color: #a07848;
+}
+.item-tab:hover { color: #f0c830; border-color: rgba(200,150,60,0.6); background: rgba(55,40,16,0.9); }
+.item-tab.active { color: #ffd040; border-color: rgba(212,168,67,0.7); background: rgba(212,168,67,0.12); }
+.item-chip {
+  font-family: 'Crimson Text', serif; font-size: 13px; padding: 4px 11px; border-radius: 2px;
+  cursor: pointer; transition: all 0.15s; background: rgba(38,27,11,0.85);
+  border: 1px solid rgba(140,100,40,0.35); color: #c0a060;
+  display: inline-flex; align-items: center; gap: 5px; line-height: 1.4;
+}
+.item-chip:hover { border-color: rgba(200,150,60,0.6); color: #f0d080; background: rgba(55,40,15,0.95); }
+.item-chip.selected { border-color: rgba(212,168,67,0.7); color: #ffd040; background: rgba(212,168,67,0.1); }
+.selected-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 8px; font-size: 13px; color: #f0d898; font-family: 'Crimson Text', serif;
+  border-bottom: 1px solid rgba(140,100,40,0.18);
+}
+.selected-item:last-child { border-bottom: none; }
+.remove-item-btn {
+  background: none; border: none; color: #7a4030; cursor: pointer;
+  font-size: 13px; padding: 0 3px; transition: color 0.15s;
+}
+.remove-item-btn:hover { color: #e04040; }
 </style>
 
   <!-- Tell Google Sites to resize the iframe to fit content -->
@@ -429,7 +457,13 @@ html, body {
     <div class="modal-section">
       <div class="modal-section-title">Identity</div>
       <div class="field-row">
-        <div class="field"><label>Character Name</label><input type="text" id="c-name" placeholder="e.g. Aldric Voss" maxlength="40"></div>
+        <div class="field">
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Character Name</span>
+            <button type="button" onclick="generateCharacterName()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:2px 9px;border-radius:2px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(212,168,67,0.18)'" onmouseout="this.style.background='rgba(140,90,20,0.3)'" title="Generate a D&D style name based on race">🎲 Generate</button>
+          </label>
+          <input type="text" id="c-name" placeholder="e.g. Aldric Voss" maxlength="40">
+        </div>
         <div class="field"><label>Race</label>
           <select id="c-race"><option>Human</option><option>Elf</option><option>Dwarf</option><option>Halfling</option><option>Half-Elf</option><option>Half-Orc</option><option>Tiefling</option><option>Gnome</option><option>Dragonborn</option><option>Aasimar</option><option>Tabaxi</option><option>Other</option></select>
         </div>
@@ -476,11 +510,38 @@ html, body {
 
     <div class="modal-section">
       <div class="modal-section-title">Starting Inventory</div>
+
+      <!-- Item category tabs -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;" id="item-tabs">
+        <button class="item-tab active" onclick="showItemTab('weapons',this)">⚔ Weapons</button>
+        <button class="item-tab" onclick="showItemTab('armour',this)">🛡 Armour</button>
+        <button class="item-tab" onclick="showItemTab('magic',this)">🔮 Magic</button>
+        <button class="item-tab" onclick="showItemTab('potions',this)">⚗ Potions</button>
+        <button class="item-tab" onclick="showItemTab('tools',this)">🎒 Tools & Gear</button>
+        <button class="item-tab" onclick="showItemTab('gold',this)">💰 Gold</button>
+      </div>
+
+      <!-- Item grids per category -->
+      <div id="item-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;min-height:66px;padding:10px 12px;background:rgba(30,20,8,0.6);border:1px solid rgba(140,100,40,0.25);border-radius:2px;"></div>
+
+      <!-- Custom item input -->
+      <div style="display:flex;gap:7px;margin-bottom:12px;align-items:center;">
+        <input type="text" id="custom-item-input" placeholder="Add a custom item..." maxlength="60"
+          style="flex:1;background:rgba(38,27,11,0.95);border:1px solid rgba(180,130,50,0.45);color:#f0d898;font-family:'Crimson Text',serif;font-size:14px;padding:7px 11px;border-radius:2px;outline:none;transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='rgba(212,168,67,0.65)'" onblur="this.style.borderColor='rgba(180,130,50,0.45)'"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomItem();}">
+        <button onclick="addCustomItem()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.5);color:#ffd040;padding:7px 16px;border-radius:2px;cursor:pointer;white-space:nowrap;transition:all 0.15s;" onmouseover="this.style.background='rgba(212,168,67,0.18)'" onmouseout="this.style.background='rgba(140,90,20,0.3)'">+ ADD</button>
+      </div>
+
+      <!-- Selected items list -->
       <div class="field-row single">
-        <div class="field"><label>Items — one per line</label>
-          <textarea id="c-inventory" style="min-height:90px" placeholder="Longsword&#10;Chain Mail&#10;Potion of Healing x2&#10;50 gold pieces"></textarea>
+        <div class="field">
+          <label>Selected Items <span id="inv-count" style="color:#a07848;font-size:11px;">(0)</span></label>
+          <div id="selected-items-list" style="background:rgba(30,20,8,0.85);border:1px solid rgba(180,130,50,0.4);border-radius:2px;padding:6px 8px;min-height:60px;max-height:130px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(140,100,40,0.3) transparent;"></div>
         </div>
       </div>
+      <!-- Hidden textarea for form submission -->
+      <textarea id="c-inventory" style="display:none;"></textarea>
     </div>
 
     <div class="modal-section">
@@ -1069,9 +1130,12 @@ function openCreatorForNew() {
   document.getElementById('c-ac').value = 12;
   document.getElementById('c-resources').value = '';
   document.getElementById('c-inventory').value = '';
+  initItemPicker([]);
   STATS.forEach(s => { document.getElementById('cs-'+s).value=10; document.getElementById('csm-'+s).textContent='+0'; });
   document.querySelectorAll('.portrait-opt').forEach((el,i) => el.classList.toggle('selected', i===0));
   document.getElementById('creator-error').textContent = '';
+  // Reset item tab to weapons
+  showItemTab('weapons', document.querySelector('.item-tab'));
   document.getElementById('party-overlay').classList.add('hidden');
   document.getElementById('creator-overlay').classList.remove('hidden');
 }
@@ -1094,6 +1158,7 @@ function openCreatorForEdit(idx) {
   document.getElementById('c-ac').value = h.ac;
   document.getElementById('c-resources').value = h.resources;
   document.getElementById('c-inventory').value = h.inventory.join('\n');
+  initItemPicker(h.inventory);
   STATS.forEach(s => { document.getElementById('cs-'+s).value=h.stats[s]; document.getElementById('csm-'+s).textContent=statMod(h.stats[s]); });
   document.querySelectorAll('.portrait-opt').forEach(el => el.classList.toggle('selected', el.textContent===selectedPortrait));
   document.getElementById('creator-error').textContent = '';
@@ -1867,6 +1932,246 @@ function getActiveQuestContext() {
   const q = quests.find(q => q.id === activeQuestId);
   if (!q) return '';
   return 'ACTIVE QUEST: ' + q.title + (q.desc ? ' — ' + q.desc : '');
+}
+
+// ── CHARACTER NAME GENERATOR ──
+const NAMES = {
+  Human: {
+    male:   ['Aldric','Brennan','Cedric','Dorian','Edmund','Fabian','Garrett','Henrik','Ivan','Jasper','Kaelan','Lucan','Marcus','Nolan','Oswin','Percival','Quinlan','Roland','Stevan','Theron','Ulric','Vance','Wren','Xander','Yorik','Zephyr','Alban','Bertram','Conrad','Daven','Eadric','Falcor','Godwin','Halvard','Innis','Jorik','Kendric','Leoric','Madoc','Norbert'],
+    female: ['Aelith','Brenna','Celyn','Devra','Elara','Fiona','Genna','Haela','Isara','Jessa','Kira','Lyra','Mira','Nerys','Orla','Petra','Quinn','Rowena','Sera','Talia','Una','Veyra','Willa','Xanthe','Ysolde','Zara','Ailis','Bethany','Cerise','Dagna','Elia','Fenna','Grena','Hadra','Ilia','Jordis'],
+    surname:['Ashborne','Blackwood','Coldwater','Dawnforge','Evermoor','Fairhaven','Graymantle','Hillcrest','Ironside','Justwood','Kessler','Lightfoot','Moorfield','Nighthollow','Oakhurst','Proudmore','Queensbury','Riverstone','Stonehaven','Thornwood','Underhill','Vaultmore','Whitmore','Crossbow','Dunhill','Embervale','Frostholm']
+  },
+  Elf: {
+    male:   ['Aedion','Caladrel','Daeron','Erevan','Faral','Galinndan','Hamaliel','Immeral','Jariel','Kelsin','Liadon','Miirphys','Naeris','Olaurin','Peren','Quaryl','Rolen','Soveliss','Thamior','Ulin','Varis','Windlin','Xanaphia','Yaerevan','Zyldar','Aerindel','Caladwen','Eltharion','Faelar'],
+    female: ['Adrie','Bethrynna','Caelynn','Dara','Elia','Faral','Gwyneth','Haera','Iefan','Janelleth','Keyleth','Leshanna','Myastan','Naivara','Orina','Pelaios','Quelenna','Riluaneth','Sariel','Tia','Uriarte','Venali','Whisper','Xune','Yaerevan','Zel','Aelindra','Caraindra','Elincia'],
+    surname:['Amastacia','Brightwood','Calastriana','Dawnwhisper','Eveningmist','Galanodel','Holimion','Ilphelkiir','Leafbower','Liadon','Meliamne','Nailo','Siannodel','Starmantle','Thornasian','Xiloscient','Zinelron','Moonwhisper','Silverfrond','Dawnweave']
+  },
+  Dwarf: {
+    male:   ['Adrik','Baern','Darrak','Eberk','Fargrim','Gardain','Harbek','Kildrak','Morgran','Orsik','Oskar','Rangrim','Rurik','Taklinn','Thoradin','Thorin','Tordek','Traubon','Travok','Ulfgar','Veit','Vondal','Bromm','Dolgrin','Gurdis','Hargram','Kilgor','Murgon'],
+    female: ['Amber','Artin','Audhild','Bardryn','Dagnal','Diesa','Eldeth','Falkrunn','Finellen','Gunnloda','Gurdis','Helja','Hlin','Kathra','Kristryd','Ilde','Liftrasa','Mardred','Riswynn','Sannl','Torbera','Torgga','Vistra','Bofri','Dafina','Geira','Helka','Ingrid'],
+    surname:['Balderk','Dankil','Fireforge','Frostbeard','Gorunn','Hammerstone','Holderhek','Ironfist','Loderr','Lutgehr','Rumnaheim','Strakeln','Torunn','Ungart','Battlehammer','Cragrock','Deepdelve','Emberstoke','Flintstone','Graystone','Ironmantle']
+  },
+  Halfling: {
+    male:   ['Alton','Ander','Cade','Corrin','Eldon','Errich','Finnan','Garret','Lindal','Lyle','Merric','Milo','Osborn','Perrin','Reed','Roscoe','Wellby','Andry','Beau','Clovis','Dunbar','Elan','Flin','Garvin','Hobbs','Jeb'],
+    female: ['Andry','Bree','Callie','Cora','Euphemia','Jillian','Kithri','Lavinia','Lidda','Merla','Nedda','Paela','Portia','Seraphina','Shaena','Trym','Vani','Verna','Wenna','Abbe','Billi','Cally','Dina','Elly','Fanny','Gilly'],
+    surname:['Brushgather','Goodbarrel','Greenbottle','High-hill','Hilltopple','Leagallow','Tealeaf','Thorngage','Tosscobble','Underbough','Applebottom','Burrows','Cloverfoot','Ferngrove','Goldenleaf','Meadowbrook','Riverrun','Smallfoot']
+  },
+  'Half-Elf': {
+    male:   ['Aedion','Brennan','Cailen','Damian','Erevan','Fabian','Gareth','Hadrian','Ivan','Jasper','Kael','Lucian','Marcus','Naeris','Oryn','Peren','Quinlan','Roland','Sariel','Theron','Varis','Wren','Xander','Yaran','Zephyr'],
+    female: ['Aelith','Brenna','Caelynn','Dara','Elara','Fiona','Gwyneth','Haela','Isara','Jessa','Kira','Lyra','Mira','Naivara','Orla','Petra','Quinn','Rowena','Sariel','Talia','Una','Veyra','Willa','Xanthe','Ysolde'],
+    surname:['Ashwood','Brightmantle','Dawnweave','Evenfall','Farwalker','Goldleaf','Halfmoon','Ironveil','Lightbringer','Moonwhisper','Nightfall','Oakheart','Rivermist','Silverwind','Thornweave','Underhill','Veilborn','Whitestar']
+  },
+  'Half-Orc': {
+    male:   ['Dench','Feng','Gell','Henk','Holg','Imsh','Keth','Krusk','Mhurren','Ront','Shump','Thokk','Bragg','Crag','Druk','Gork','Grim','Harg','Karg','Lurk','Morg','Narg','Ork','Rarg','Skrag','Thrak','Urk','Varg','Worg'],
+    female: ['Baggi','Emen','Engong','Kansif','Myev','Neega','Ovak','Ownka','Shautha','Sutha','Vola','Volen','Yevelda','Basha','Dagna','Gruna','Harga','Ilsa','Jaga','Karga','Lurga','Murga','Nurga','Orka','Ruga','Shara','Thuga','Urga'],
+    surname:['Dreadmaw','Grimfang','Ironhide','Kneebreaker','Skullsplitter','Stoneback','Strongarm','Swordbreaker','Throatcutter','Tuskhide','Warborn','Bloodaxe','Bonecrusher','Darkmantle','Emberbrand','Firebrand','Grimrock','Hellscream']
+  },
+  Tiefling: {
+    male:   ['Akmenos','Amnon','Barakas','Damakos','Ekemon','Iados','Kairon','Leucis','Melech','Mordai','Morthos','Pelaios','Skamos','Therai','Zoticos','Arryn','Bael','Calix','Damas','Ekko','Ferros','Gault','Havoc','Ikos','Janos'],
+    female: ['Akta','Anakis','Bryseis','Criella','Damaia','Ea','Kallista','Lerissa','Makaria','Nemeia','Orianna','Phelaia','Rieta','Tanis','Ubaste','Vorla','Wrethe','Xylia','Yanna','Zelda','Aura','Bexis','Calia','Dara','Elia','Falia'],
+    surname:['Art','Carrion','Chant','Creed','Despair','Doom','Dread','Foes','Gloom','Glower','Hatred','Hope','Hubris','Ignition','Infamy','Lament','Malice','Many','Mires','Mortal','Needs','Noise','Nowhere','Null','Omen','Pact','Pain','Ruin','Scorn','Tempest','Torment','Treachery','Vengeance','Vice','Vulture','Weary','Wounds','Wrath','Zeal']
+  },
+  Gnome: {
+    male:   ['Alston','Alvyn','Boddynock','Brocc','Burgell','Dimble','Eldon','Erky','Fonkin','Frug','Gerbo','Gimble','Glim','Jebeddo','Kellen','Namfoodle','Orryn','Roondar','Seebo','Sindri','Warryn','Wrenn','Zook','Barvyn','Codwick','Dobbin','Elgin','Flin','Glimdrick'],
+    female: ['Bimpnottin','Breena','Caramip','Carlin','Donella','Duvamil','Ella','Ellyjobell','Ellywick','Lilli','Loopmottin','Lorilla','Mardnab','Nissa','Nyx','Oda','Orla','Roywyn','Shamil','Tana','Waywocket','Zanna','Ami','Bemi','Cari','Dari','Emi','Feli','Gili'],
+    surname:['Beren','Daergel','Folkor','Garrick','Nackle','Murnig','Ningel','Raulnor','Scheppen','Timbers','Turen','Clankwheel','Cogspring','Fizzlwick','Geargrind','Sparkwhistle','Tinkertop','Whirligig','Wobblespring','Zappycog']
+  },
+  Dragonborn: {
+    male:   ['Arjhan','Balasar','Bharash','Donaar','Ghesh','Heskan','Kriv','Medrash','Mehen','Nadarr','Pandjed','Patrin','Rhogar','Shamash','Shedinn','Tarhun','Torinn','Vondal','Wuming','Yarjak','Zephyros','Caeus','Daardendrian','Felkur','Gurik'],
+    female: ['Akra','Biri','Daar','Farideh','Harann','Havilar','Jheri','Kava','Korinn','Mishann','Nala','Perra','Raiann','Sora','Surina','Thava','Uadjit','Vrinn','Wuming','Xaedra','Yestara','Zelara','Adrynn','Bhara','Corra','Dhaela'],
+    surname:['Clethtinthiallor','Daardendrian','Delmirev','Drachedandion','Fenkenkabradon','Kepeshkmolik','Kerrhylon','Kimbatuul','Linxakasendalor','Myastan','Nemmonis','Norixius','Ophinshtalajiir','Prexijandilin','Shestendeliath','Turnuroth','Verthisathurgiesh','Yarjerit']
+  },
+  Aasimar: {
+    male:   ['Aradel','Balasar','Celian','Darien','Elan','Faramond','Gavriel','Hadrian','Ilan','Javan','Kaelorn','Lucian','Maeron','Nathaniel','Orion','Paladar','Quintus','Raphael','Sariel','Theodas','Uriel','Valerian','Xavier','Yaran','Zadkiel'],
+    female: ['Aelindra','Briel','Caelynn','Dara','Elara','Fiora','Gabriella','Haela','Illyria','Jessamine','Kaelindra','Lyria','Mirael','Naomi','Orianna','Phaedra','Quintessa','Raelinn','Sariel','Thalia','Uriel','Valeria','Wren','Xanthe','Ysolde','Zaphira'],
+    surname:['Brightmantle','Dawnguard','Glorymane','Goldenhalo','Holylight','Ironheart','Lightbringer','Moonsong','Radiantblade','Silverstar','Sunspark','Truelight','Whitewing']
+  },
+  Tabaxi: {
+    male:   ['Blur','Cloud on the Mountaintop','Fjord','Haze','Jade','Litter','Moonsong','Night Mist','Orryn','River','Shadow','Smoke','Spark','Spring Rain','Stumble','Sudden Dawn','Thunder','Two Boulders','Urgent','Vast Horizon','Whisper','Winter Wind'],
+    female: ['Autumn Rain','Bright Torch','Dancing Leaf','Dusk','Ember','Evening Star','Fallen Leaf','Glittering Gem','High Sun','Hunting Cat','Last Autumn','Leaf on Wind','Mist at Dawn','Morning Dew','Night Flower','Silver Moon','Slow River','Storm Dancer','Summer Rain','Twilight','White Mist'],
+    surname:['of the Autumn Leaf','of the Burning Eye','of the Distant Peak','of the Endless Plain','of the Frozen North','of the High Mountain','of the Long Shore','of the Open Road','of the Restless Sea','of the Rising Sun','of the Silver Moon','of the Still Waters','of the Swift Arrow','of the Warm Hearth','of the Wandering Path']
+  },
+  Other: {
+    male:   ['Aldric','Brennan','Cailen','Dorian','Erevan','Fabian','Garrett','Henrik','Ivan','Jasper','Kaelan','Lucan','Marcus','Nolan','Oswyn','Percival','Roland','Stefan','Theron','Ulric'],
+    female: ['Aelith','Brenna','Celyn','Devra','Elara','Fiona','Genna','Haela','Isara','Jessa','Kira','Lyra','Mira','Nerys','Orla','Petra','Quinn','Rowena','Sera','Talia'],
+    surname:['Ashborne','Blackwood','Coldwater','Dawnforge','Evermoor','Fairhaven','Graymantle','Hillcrest','Ironside','Lightfoot','Moorfield','Nighthollow','Oakhurst','Proudmore','Riverstone','Stonehaven','Thornwood']
+  }
+};
+
+function generateCharacterName() {
+  const race = document.getElementById('c-race').value || 'Human';
+  const nameSet = NAMES[race] || NAMES['Human'];
+
+  // Randomly pick male or female
+  const gender = Math.random() < 0.5 ? 'male' : 'female';
+  const firstNames = nameSet[gender] || nameSet.male;
+  const surnames = nameSet.surname;
+
+  const first = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const surname = surnames[Math.floor(Math.random() * surnames.length)];
+
+  // Some races use different formats
+  let fullName;
+  if (race === 'Tiefling') {
+    // Tieflings sometimes use virtue names alone
+    fullName = Math.random() < 0.4 ? first : first + ' ' + surname;
+  } else if (race === 'Tabaxi') {
+    fullName = first + ' ' + surname;
+  } else {
+    fullName = first + ' ' + surname;
+  }
+
+  const inp = document.getElementById('c-name');
+  inp.value = fullName;
+
+  // Flash the input gold
+  inp.style.borderColor = 'rgba(212,168,67,0.8)';
+  inp.style.color = '#ffd040';
+  setTimeout(() => {
+    inp.style.borderColor = '';
+    inp.style.color = '';
+  }, 600);
+}
+
+// ── ITEM PICKER ──
+const ITEM_CATALOGUE = {
+  weapons: [
+    'Longsword','Shortsword','Greatsword','Rapier','Dagger','Handaxe','Battleaxe','Greataxe',
+    'Warhammer','Mace','Quarterstaff','Spear','Longbow','Shortbow','Hand Crossbow','Light Crossbow',
+    'Heavy Crossbow','Javelin','Trident','Flail','Morningstar','Scimitar','Whip','Club','Sickle',
+    'Net','Lance','Pike','Halberd','Glaive','Maul','Greatclub'
+  ],
+  armour: [
+    'Leather Armour','Studded Leather','Hide Armour','Chain Shirt','Scale Mail','Breastplate',
+    'Half Plate','Ring Mail','Chain Mail','Splint Armour','Plate Armour',
+    'Shield','Buckler','Tower Shield',
+    'Padded Armour','Explorer Pack','Dungeoneer Pack','Diplomat Pack'
+  ],
+  magic: [
+    'Arcane Focus','Holy Symbol','Druidic Focus','Spellbook','Component Pouch',
+    'Wand of Magic Missiles','Scroll of Fireball','Scroll of Identify','Scroll of Cure Wounds',
+    'Scroll of Detect Magic','Ring of Protection','Cloak of Elvenkind','Boots of Elvenkind',
+    'Bag of Holding','Immovable Rod','Rope of Climbing','Lantern of Revealing',
+    'Amulet of Health','Gauntlets of Ogre Power','Headband of Intellect','Periapt of Wisdom',
+    'Rod of the Pact Keeper','Staff of the Woodlands','Wand of the War Mage'
+  ],
+  potions: [
+    'Potion of Healing','Potion of Greater Healing','Potion of Superior Healing',
+    'Potion of Fire Breath','Potion of Invisibility','Potion of Water Breathing',
+    'Potion of Flying','Potion of Speed','Potion of Heroism','Potion of Resistance',
+    'Potion of Climbing','Potion of Animal Friendship','Potion of Mind Reading',
+    'Antitoxin','Acid (vial)','Alchemist Fire'
+  ],
+  tools: [
+    'Rope (50ft)','Torch x5','Rations (5 days)','Waterskin','Bedroll','Tinderbox',
+    'Backpack','Crowbar','Grappling Hook','Hammer & Pitons','Healers Kit',
+    'Thieves Tools','Disguise Kit','Forgery Kit','Herbalism Kit','Poisoner Kit',
+    'Calligrapher Supplies','Cartographer Tools','Navigator Tools',
+    'Musical Instrument','Lantern (hooded)','Oil (flask)','Mirror (steel)',
+    'Magnifying Glass','Manacles','Shovel','Merchants Scale'
+  ],
+  gold: [
+    '10 gold pieces','25 gold pieces','50 gold pieces','100 gold pieces','200 gold pieces',
+    '5 silver pieces','10 silver pieces','50 silver pieces',
+    'Gemstone (10gp)','Gemstone (50gp)','Gemstone (100gp)','Fine Jewellery (250gp)'
+  ]
+};
+
+let currentItemTab = 'weapons';
+let selectedItems = [];
+
+function showItemTab(tab, btn) {
+  currentItemTab = tab;
+  document.querySelectorAll('.item-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderItemGrid();
+}
+
+function renderItemGrid() {
+  const grid = document.getElementById('item-grid');
+  if (!grid) return;
+  const items = ITEM_CATALOGUE[currentItemTab] || [];
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const chip = document.createElement('button');
+    chip.className = 'item-chip' + (selectedItems.includes(item) ? ' selected' : '');
+    chip.textContent = (selectedItems.includes(item) ? '✓ ' : '') + item;
+    chip.onclick = () => toggleItem(item, chip);
+    grid.appendChild(chip);
+  });
+}
+
+function toggleItem(item, chip) {
+  const idx = selectedItems.indexOf(item);
+  if (idx >= 0) {
+    selectedItems.splice(idx, 1);
+    chip.classList.remove('selected');
+    chip.textContent = item;
+  } else {
+    selectedItems.push(item);
+    chip.classList.add('selected');
+    chip.textContent = '✓ ' + item;
+  }
+  syncInventoryTextarea();
+  renderSelectedItems();
+}
+
+function addCustomItem() {
+  const inp = document.getElementById('custom-item-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (!selectedItems.includes(val)) {
+    selectedItems.push(val);
+    syncInventoryTextarea();
+    renderSelectedItems();
+    renderItemGrid(); // refresh chips
+  }
+  inp.value = '';
+  inp.focus();
+}
+
+function removeSelectedItem(item) {
+  selectedItems = selectedItems.filter(i => i !== item);
+  syncInventoryTextarea();
+  renderSelectedItems();
+  renderItemGrid();
+}
+
+function renderSelectedItems() {
+  const list = document.getElementById('selected-items-list');
+  const count = document.getElementById('inv-count');
+  if (!list) return;
+  count.textContent = '(' + selectedItems.length + ')';
+  if (selectedItems.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:#605030;font-style:italic;">No items selected yet.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  selectedItems.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'selected-item';
+    const name = document.createElement('span');
+    name.textContent = item;
+    const btn = document.createElement('button');
+    btn.className = 'remove-item-btn';
+    btn.textContent = '✕';
+    btn.title = 'Remove ' + item;
+    btn.onclick = () => removeSelectedItem(item);
+    row.appendChild(name);
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+function syncInventoryTextarea() {
+  const ta = document.getElementById('c-inventory');
+  if (ta) ta.value = selectedItems.join('\n');
+}
+
+function initItemPicker(existingItems) {
+  selectedItems = existingItems ? [...existingItems] : [];
+  renderItemGrid();
+  renderSelectedItems();
 }
 
 // ── STAT ROLLING ──

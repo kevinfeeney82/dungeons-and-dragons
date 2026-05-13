@@ -1507,6 +1507,14 @@ function startGame() {
   const names = party.map(h=>h.name).join(', ');
   addMessage('system', null, `⚔ ${names} enter${party.length===1?'s':''} the realm... ⚔`);
   updateDebriefBtn();
+
+  // Auto-create a named save slot for this campaign
+  const autoName = campaign.name || (names + "'s Campaign");
+  const slotId = 'slot_' + Date.now();
+  currentSlotId = slotId;
+  saveToSlot(slotId, autoName);
+  showToast('Campaign "' + autoName + '" auto-save created.');
+
   const active = party[activeHeroIdx];
 
   // Check if we have an imported session to continue from
@@ -1834,12 +1842,31 @@ function initNarration() {
     narrationProvider = select.value;
     updateKeyFieldVisibility(select.value);
   });
+
+  // If Worker is configured, hide all key fields — keys are server-side
+  if (WORKER_URL && WORKER_URL !== '') {
+    const gRow = document.getElementById('google-key-row');
+    const eRow = document.getElementById('el-key-row');
+    if (gRow) gRow.style.display = 'none';
+    if (eRow) eRow.style.display = 'none';
+    // Mark as ready
+    googleTTSKey = '__worker__';
+    document.getElementById('narration-status').textContent = '';
+  }
 }
 
 function updateKeyFieldVisibility(val) {
+  const workerActive = WORKER_URL && WORKER_URL !== '';
   const elRow = document.getElementById('el-key-row');
   const gRow = document.getElementById('google-key-row');
   const status = document.getElementById('narration-status');
+  // Never show key fields if Worker handles it
+  if (workerActive) {
+    if (elRow) elRow.style.display = 'none';
+    if (gRow) gRow.style.display = 'none';
+    status.textContent = narrationEnabled ? 'auto-reads DM messages' : '';
+    return;
+  }
   if (elRow) elRow.style.display = val.startsWith('__el__') ? 'flex' : 'none';
   if (gRow) gRow.style.display = val.startsWith('__google__') ? 'flex' : 'none';
   if (val.startsWith('__google__') && !googleTTSKey) {
@@ -1927,10 +1954,11 @@ async function speakText(text, btnEl) {
 
   const prov = narrationProvider;
 
-  if (prov.startsWith('__google__') && googleTTSKey) {
+  const workerActive = WORKER_URL && WORKER_URL !== '';
+  if (prov.startsWith('__google__') && (googleTTSKey || workerActive)) {
     const voiceName = prov.split(':')[1] || googleVoiceName;
     await speakGoogleTTS(clean, voiceName, btnEl);
-  } else if (prov.startsWith('__el__') && elevenLabsKey) {
+  } else if (prov.startsWith('__el__') && (elevenLabsKey || workerActive)) {
     const voiceId = prov.split(':')[1];
     await speakElevenLabs(clean, voiceId, btnEl);
   } else {
@@ -1941,8 +1969,16 @@ async function speakText(text, btnEl) {
 async function speakGoogleTTS(text, voiceName, btnEl) {
   try {
     const langCode = voiceName.substring(0, 5); // e.g. en-GB
-    const response = await fetch(
-      'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + googleTTSKey,
+    // Use Worker if available (hides API key), otherwise direct with user key
+    const useWorker = WORKER_URL && WORKER_URL !== '';
+    const fetchUrl = useWorker
+      ? WORKER_URL + '?service=google-tts'
+      : 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + googleTTSKey;
+    if (!useWorker && !googleTTSKey) {
+      showToast('Enter your Google TTS API key first.');
+      speakBrowser(text, btnEl); return;
+    }
+    const response = await fetch(fetchUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

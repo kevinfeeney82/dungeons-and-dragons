@@ -481,6 +481,19 @@ html, body {
 .hp-adj-input:focus { border-color: rgba(212,168,67,0.6); }
 .hp-change-flash { animation: hpFlash 0.6s ease; }
 @keyframes hpFlash { 0%{opacity:1} 30%{opacity:0.3} 100%{opacity:1} }
+
+/* ── ITEM PICKUP ── */
+.item-pickup-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.item-pickup-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: #a07848; white-space: nowrap; }
+.item-pickup-btn {
+  font-family: 'Crimson Text', serif; font-size: 13px; line-height: 1.3;
+  padding: 4px 12px; border-radius: 2px; cursor: pointer; transition: all 0.18s;
+  background: rgba(38,27,11,0.85); border: 1px solid rgba(140,100,40,0.5);
+  color: #d0aa70; display: inline-flex; align-items: center; gap: 6px;
+}
+.item-pickup-btn:hover { background: rgba(65,48,18,0.95); border-color: rgba(212,168,67,0.65); color: #ffd040; }
+.item-pickup-btn .pickup-icon { font-size: 12px; }
+.item-pickup-btn.picked { border-color: rgba(70,140,70,0.5); color: #70b870; background: rgba(20,50,20,0.5); cursor: default; }
 </style>
 
   <!-- Tell Google Sites to resize the iframe to fit content -->
@@ -1695,6 +1708,11 @@ function addMessage(type, header, body) {
     showDMOptions(dmOpts);
     // Auto-detect HP changes from DM text
     setTimeout(() => parseHPChanges(body), 100);
+    // Detect item/spell pickups and show add-to-inventory buttons
+    setTimeout(() => {
+      const items = parsePickupItems(body);
+      if (items.length) showItemPickups(items, msg);
+    }, 150);
   } else {
     msg.appendChild(bodyEl);
     log.appendChild(msg);
@@ -3157,6 +3175,122 @@ function deleteRosterHero(rosterIdx) {
   saveRoster(roster);
   renderRoster();
   showToast(name + ' removed from roster.');
+}
+
+// ── ITEM PICKUP DETECTOR ──
+
+// Keywords that suggest an item/spell/reward was received
+const PICKUP_VERBS = [
+  'you find','you discover','you receive','you pick up','you take','you grab',
+  'you obtain','you acquire','you are given','you are rewarded','you loot',
+  'you pocket','you claim','hands you','gives you','grants you','awards you',
+  'you recover','you retrieve','you uncover','you pry','yields','contains',
+  'inside is','inside you find','inside are','the chest contains','the body has',
+  'reward is','your reward','you learn','you memorise','you memorize',
+  'you copy','added to your','added to the','now carry','now have'
+];
+
+// Patterns to extract item names from pickup sentences
+function parsePickupItems(text) {
+  if (!party.length || !gameStarted) return [];
+
+  const found = [];
+  const lines = text.split(/[.!?]\s+|\n/);
+
+  lines.forEach(line => {
+    const lower = line.toLowerCase();
+    const hasPickupVerb = PICKUP_VERBS.some(v => lower.includes(v));
+    if (!hasPickupVerb) return;
+
+    // Extract items using common D&D item patterns
+    // Match: "a [item]", "an [item]", "the [item]", quoted items, capitalised items
+    const patterns = [
+      // "a/an Longsword +1" or "a/an potion of healing"
+      /\b(?:a|an|the)\s+([A-Z][a-zA-Z\s+\d'(),-]{2,40}?)(?:\s*[,;.]|\s+and\b|\s+or\b|$)/g,
+      // Quoted items: "Boots of Speed"
+      /"([^"]{3,40})"/g,
+      // Capitalised multi-word items: Scroll of Fireball, Ring of Protection
+      /\b((?:[A-Z][a-z]+\s+){1,4}(?:of\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|[+]\d+|[A-Z][a-z]+))\b/g,
+    ];
+
+    patterns.forEach(p => {
+      p.lastIndex = 0;
+      let m;
+      while ((m = p.exec(line)) !== null) {
+        const candidate = m[1].trim();
+        if (isLikelyItem(candidate)) {
+          found.push(candidate);
+        }
+      }
+    });
+  });
+
+  // Deduplicate
+  return [...new Set(found)].slice(0, 6);
+}
+
+function isLikelyItem(text) {
+  if (!text || text.length < 3 || text.length > 50) return false;
+  const lower = text.toLowerCase();
+  // Exclude common non-items
+  const exclude = ['you','the party','your','they','them','he','she','it',
+    'this','that','there','here','what','which','who','when','where','how',
+    'ancient voice','dungeon master','party','hero','adventurer'];
+  if (exclude.some(e => lower === e || lower.startsWith(e + ' '))) return false;
+  // Must contain at least one letter sequence
+  if (!/[a-zA-Z]{3}/.test(text)) return false;
+  // Good signs: contains weapon/item keywords, or is title-cased
+  const itemKeywords = ['sword','axe','bow','staff','wand','rod','ring','cloak','boots',
+    'gloves','helm','shield','armour','armor','potion','scroll','gem','stone','key',
+    'amulet','pendant','necklace','bracelet','bag','pack','kit','tool','instrument',
+    'dagger','mace','flail','spear','lance','rapier','spell','tome','book','map',
+    'coin','gold','silver','jewel','orb','crystal','rune','sigil','+1','+2','+3'];
+  const hasKeyword = itemKeywords.some(k => lower.includes(k));
+  const isTitleCase = /^[A-Z]/.test(text);
+  return hasKeyword || (isTitleCase && text.split(' ').length >= 2);
+}
+
+function showItemPickups(items, msgEl) {
+  if (!items.length) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'item-pickup-bar';
+
+  const label = document.createElement('span');
+  label.className = 'item-pickup-label';
+  label.textContent = '+ ADD TO INVENTORY:';
+  bar.appendChild(label);
+
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'item-pickup-btn';
+    btn.innerHTML = '<span class="pickup-icon">🎒</span>' + item;
+    btn.title = 'Add "' + item + '" to ' + (party[activeHeroIdx] ? party[activeHeroIdx].name + "'s" : 'your') + ' inventory';
+    btn.onclick = () => {
+      if (btn.classList.contains('picked')) return;
+      addItemToActiveHero(item);
+      btn.classList.add('picked');
+      btn.innerHTML = '<span class="pickup-icon">✓</span>' + item;
+    };
+    bar.appendChild(btn);
+  });
+
+  // Append to the message body
+  const bodyEl = msgEl ? msgEl.querySelector('.msg-body') : null;
+  if (bodyEl) bodyEl.appendChild(bar);
+}
+
+function addItemToActiveHero(item) {
+  if (!party.length) return;
+  const hero = party[activeHeroIdx];
+  if (!hero.inventory.includes(item)) {
+    hero.inventory.push(item);
+    updateActiveHeroDisplay();
+    addMessage('system', null, '🎒 ' + item + ' added to ' + hero.name + "'s inventory.");
+    setTimeout(autoSave, 300);
+  } else {
+    showToast(hero.name + ' already has ' + item + '.');
+  }
 }
 
 // ── CAMPAIGN NAME RANDOMISER ──

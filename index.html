@@ -659,7 +659,16 @@ html, body {
           <button onclick="rollAllStats()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:3px 12px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Roll 4d6 drop lowest for all stats">🎲 Roll All</button>
           <button onclick="rollStatStandard()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.4);color:#a07848;padding:3px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Standard array: 15,14,13,12,10,8">📋 Standard</button>
           <button onclick="resetStats()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(100,70,30,0.35);color:#706040;padding:3px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Reset all to 10">↺ Reset</button>
+          <button onclick="showStatRecommendation()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(80,120,160,0.45);color:#6090c0;padding:3px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Recommend stats for your class and race">★ Recommend</button>
         </div>
+      </div>
+      <div id="stat-recommendation" style="display:none;margin-bottom:10px;background:rgba(30,22,8,0.8);border:1px solid rgba(212,168,67,0.3);border-radius:3px;padding:10px 12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;color:#c09040;" id="rec-title">RECOMMENDED FOR CLASS</span>
+          <button onclick="applyRecommendedStats()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.5);color:#ffd040;padding:3px 12px;border-radius:2px;cursor:pointer;">⬆ USE THESE</button>
+        </div>
+        <div id="rec-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;"></div>
+        <div id="rec-note" style="font-size:12px;color:#907050;font-style:italic;line-height:1.4;"></div>
       </div>
       <div class="stat-creator-grid" id="stat-creator-grid"></div>
       <div id="stat-roll-log" style="font-size:11px;color:#807050;font-style:italic;font-family:'Crimson Text',serif;min-height:16px;margin-top:4px;text-align:right;"></div>
@@ -1367,8 +1376,13 @@ function openCreatorForNew() {
   document.getElementById('creator-error').textContent = '';
   // Reset item tab to weapons
   showItemTab('weapons', document.querySelector('.item-tab'));
+  // Hide recommendation panel on open
+  const recPanel = document.getElementById('stat-recommendation');
+  if (recPanel) recPanel.style.display = 'none';
+  currentRecommendation = null;
   document.getElementById('party-overlay').classList.add('hidden');
   document.getElementById('creator-overlay').classList.remove('hidden');
+  setTimeout(watchClassRaceChanges, 50);
 }
 
 function openCreatorForEdit(idx) {
@@ -3094,6 +3108,136 @@ function initItemPicker(existingItems) {
   selectedItems = existingItems ? [...existingItems] : [];
   renderItemGrid();
   renderSelectedItems();
+}
+
+// ── STAT RECOMMENDATIONS ──
+// Priority order for each class: which stats to put highest scores in
+// Format: [STR, DEX, CON, INT, WIS, CHA] — assign standard array 15,14,13,12,10,8 in priority order
+const CLASS_STAT_PRIORITY = {
+  Barbarian: { order:['STR','CON','DEX','WIS','CHA','INT'], note:'STR and CON are paramount — you want to hit hard and soak damage. DEX helps AC in Unarmoured Defence.' },
+  Bard:      { order:['CHA','DEX','CON','WIS','INT','STR'], note:'CHA powers all your spells and abilities. DEX keeps you safe, CON keeps you alive.' },
+  Cleric:    { order:['WIS','CON','STR','CHA','DEX','INT'], note:'WIS is your spellcasting stat. CON for concentration, STR if you want to be in the thick of battle.' },
+  Druid:     { order:['WIS','CON','DEX','INT','CHA','STR'], note:'WIS drives your spellcasting and Wild Shape effectiveness. CON for concentration spells.' },
+  Fighter:   { order:['STR','CON','DEX','WIS','INT','CHA'], note:'For melee: max STR and CON. For Archery build swap STR and DEX. Either way CON keeps you in the fight.' },
+  Monk:      { order:['DEX','WIS','CON','STR','INT','CHA'], note:'DEX and WIS both fuel AC and abilities. CON keeps you healthy. STR is largely wasted for Monks.' },
+  Paladin:   { order:['STR','CHA','CON','WIS','DEX','INT'], note:'STR for smiting, CHA for auras and spells — Paladins are one of the few classes that want two high stats.' },
+  Ranger:    { order:['DEX','WIS','CON','STR','INT','CHA'], note:'DEX for attacks and AC, WIS for spellcasting. CON helps concentration. STR is largely unnecessary.' },
+  Rogue:     { order:['DEX','CON','INT','WIS','CHA','STR'], note:'DEX is everything for Rogues — attacks, AC, and Sneak Attack. INT for Arcane Trickster builds.' },
+  Sorcerer:  { order:['CHA','CON','DEX','WIS','INT','STR'], note:'CHA is your spellcasting stat. CON is critical for concentration and surviving being in range.' },
+  Warlock:   { order:['CHA','CON','DEX','WIS','INT','STR'], note:'CHA powers Eldritch Blast and all spells. CON keeps you alive. Everything else is secondary.' },
+  Wizard:    { order:['INT','CON','DEX','WIS','CHA','STR'], note:'INT is everything — spell saves, attack rolls, prepared spells. CON for concentration. Stay out of melee.' },
+};
+
+// Racial ability score bonuses (D&D 5E standard)
+const RACE_BONUSES = {
+  Human:     { STR:1, DEX:1, CON:1, INT:1, WIS:1, CHA:1, note:'Humans gain +1 to all stats — versatile for any class.' },
+  Elf:       { DEX:2, INT:1, note:'Wood Elves: +2 DEX, +1 WIS. High Elves: +2 DEX, +1 INT. Great for Wizards, Rangers, Rogues.' },
+  Dwarf:     { CON:2, WIS:1, note:'Mountain Dwarves also get +2 STR. Excellent for Clerics, Fighters, and Paladins.' },
+  Halfling:  { DEX:2, CHA:1, note:'+2 DEX and Lucky trait make Halflings excellent Rogues and Bards.' },
+  'Half-Elf':{ CHA:2, note:'+2 CHA plus +1 to any two stats of your choice. Ideal for Paladins, Warlocks, Bards.' },
+  'Half-Orc':{ STR:2, CON:1, note:'+2 STR, +1 CON plus Relentless Endurance. Perfect Barbarians and Fighters.' },
+  Tiefling:  { CHA:2, INT:1, note:'+2 CHA, +1 INT. Excellent Warlocks, Sorcerers, and Bards.' },
+  Gnome:     { INT:2, DEX:1, note:'+2 INT, +1 DEX. Natural Wizards and Artificers.' },
+  Dragonborn:{ STR:2, CHA:1, note:'+2 STR, +1 CHA. Good Paladins, Fighters, and Sorcerers.' },
+  Aasimar:   { CHA:2, WIS:1, note:'+2 CHA, +1 WIS. Excellent Paladins and Clerics.' },
+  Tabaxi:    { DEX:2, CHA:1, note:'+2 DEX, +1 CHA. Natural Rogues and Bards.' },
+};
+
+const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+
+let currentRecommendation = null;
+
+function showStatRecommendation() {
+  const charClass = document.getElementById('c-class').value;
+  const race = document.getElementById('c-race').value;
+  const classPriority = CLASS_STAT_PRIORITY[charClass];
+  const raceBonuses = RACE_BONUSES[race] || {};
+
+  if (!classPriority) return;
+
+  // Build recommended stats: assign standard array in priority order
+  const stats = { STR:0, DEX:0, CON:0, INT:0, WIS:0, CHA:0 };
+  classPriority.order.forEach((stat, i) => {
+    stats[stat] = STANDARD_ARRAY[i];
+  });
+
+  // Apply racial bonuses
+  const raceNote = raceBonuses.note || '';
+  delete raceBonuses.note;
+  const finalStats = {};
+  STATS.forEach(s => {
+    finalStats[s] = stats[s] + (raceBonuses[s] || 0);
+  });
+
+  currentRecommendation = finalStats;
+
+  // Show recommendation panel
+  const panel = document.getElementById('stat-recommendation');
+  const titleEl = document.getElementById('rec-title');
+  const statsEl = document.getElementById('rec-stats');
+  const noteEl = document.getElementById('rec-note');
+
+  titleEl.textContent = 'RECOMMENDED FOR ' + charClass.toUpperCase() + ' (' + race.toUpperCase() + ')';
+
+  statsEl.innerHTML = '';
+  STATS.forEach(s => {
+    const hasBonus = raceBonuses[s] > 0;
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;flex-direction:column;align-items:center;background:rgba(42,30,12,0.9);border:1px solid rgba(' + (hasBonus ? '100,180,100,0.5' : '140,100,40,0.35') + ');border-radius:2px;padding:5px 8px;min-width:44px;';
+    chip.innerHTML =
+      '<div style="font-family:Cinzel,serif;font-size:9px;color:#807050;letter-spacing:1px;">' + s + '</div>' +
+      '<div style="font-family:Cinzel,serif;font-size:18px;font-weight:600;color:' + (hasBonus ? '#90d090' : '#f5e080') + ';">' + finalStats[s] + '</div>' +
+      '<div style="font-size:10px;color:#807050;">' + (finalStats[s] >= 10 ? '+' : '') + Math.floor((finalStats[s]-10)/2) + '</div>' +
+      (hasBonus ? '<div style="font-size:9px;color:#70b870;">+' + raceBonuses[s] + ' race</div>' : '');
+    statsEl.appendChild(chip);
+  });
+
+  // Build note
+  const priorityList = classPriority.order.map((s,i) => s + '(' + STANDARD_ARRAY[i] + ')').join(' › ');
+  noteEl.innerHTML =
+    '<strong style="color:#c09040;">' + charClass + ':</strong> ' + classPriority.note +
+    (raceNote ? '<br><strong style="color:#70a070;">' + race + ':</strong> ' + raceNote : '') +
+    '<br><span style="color:#605030;">Priority: ' + priorityList + '</span>';
+
+  panel.style.display = 'block';
+
+  // Scroll to recommendation
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function applyRecommendedStats() {
+  if (!currentRecommendation) return;
+  STATS.forEach(s => {
+    const inp = document.getElementById('cs-' + s);
+    if (inp) {
+      inp.value = currentRecommendation[s];
+      document.getElementById('csm-' + s).textContent = statMod(currentRecommendation[s]);
+      // Flash
+      inp.style.color = '#ffd040';
+      inp.style.borderColor = 'rgba(212,168,67,0.8)';
+      setTimeout(() => { inp.style.color = ''; inp.style.borderColor = ''; }, 700);
+    }
+  });
+  const charClass = document.getElementById('c-class').value;
+  const race = document.getElementById('c-race').value;
+  document.getElementById('stat-roll-log').textContent =
+    'Applied recommended stats for ' + race + ' ' + charClass;
+  document.getElementById('stat-recommendation').style.display = 'none';
+}
+
+// Auto-update recommendation when class or race changes
+function watchClassRaceChanges() {
+  const classEl = document.getElementById('c-class');
+  const raceEl = document.getElementById('c-race');
+  if (!classEl || !raceEl) return;
+  const update = () => {
+    // Only refresh if panel is already visible
+    if (document.getElementById('stat-recommendation').style.display !== 'none') {
+      showStatRecommendation();
+    }
+  };
+  classEl.addEventListener('change', update);
+  raceEl.addEventListener('change', update);
 }
 
 // ── STAT ROLLING ──

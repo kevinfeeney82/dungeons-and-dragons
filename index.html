@@ -193,7 +193,17 @@ html, body {
 
 /* ── RIGHT PANEL ── */
 .right-panel { grid-column: 3; grid-row: 2; border-left: 1px solid rgba(180,130,50,0.2); padding: 18px 13px; background: rgba(38,28,14,0.9); display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
-.quest-item { padding: 9px 11px; background: rgba(42,30,12,0.8); border: 1px solid rgba(160,120,50,0.4); border-radius: 3px; margin-bottom: 7px; }
+.quest-item { padding: 9px 11px; background: rgba(42,30,12,0.8); border: 1px solid rgba(160,120,50,0.4); border-radius: 3px; margin-bottom: 7px; transition: all 0.15s; }
+.quest-item:hover { border-color: rgba(212,168,67,0.5); background: rgba(55,40,16,0.9); }
+.quest-item.quest-active {
+  background: rgba(60,44,14,0.95);
+  border: 1px solid #d4a843;
+  border-left: 4px solid #ffd040;
+  box-shadow: 0 0 12px rgba(212,168,67,0.18), inset 0 0 20px rgba(212,168,67,0.04);
+  padding-left: 8px;
+}
+.quest-item.quest-active .quest-title { color: #ffd040; font-size: 13px; }
+.quest-item.quest-active .quest-desc { color: #c0a060; }
 .quest-title { font-family: 'Cinzel', serif; font-size: 12px; color: #f0c830; margin-bottom: 3px; }
 .quest-desc { font-size: 12px; color: #c09860; line-height: 1.4; }
 .quest-status { font-size: 10px; color: #6a9060; margin-top: 5px; font-family: 'Cinzel', serif; letter-spacing: 0.5px; }
@@ -2036,7 +2046,7 @@ let activeQuestId = 1;
 let nextQuestId = 3;
 
 const QUEST_STATUS = {
-  in_progress: { icon: '●', label: 'IN PROGRESS', color: '#6a9060' },
+  in_progress: { icon: '▶', label: 'ACTIVE QUEST', color: '#ffd040' },
   discovered:  { icon: '○', label: 'DISCOVERED',  color: '#8a7040' },
   completed:   { icon: '✓', label: 'COMPLETED',   color: '#4a7a8a' },
   failed:      { icon: '✗', label: 'FAILED',      color: '#8a3030' }
@@ -2059,7 +2069,7 @@ function renderQuests() {
       '<div class="quest-title">' + q.title + '</div>' +
       '<div class="quest-desc">' + q.desc + '</div>' +
       '<div class="quest-status">' +
-        '<span style="color:' + st.color + '">' + st.icon + ' ' + st.label + '</span>' +
+        '<span style="color:' + (q.id === activeQuestId ? '#ffd040' : st.color) + ';' + (q.id === activeQuestId ? 'font-size:11px;letter-spacing:1px;' : '') + '">' + (q.id === activeQuestId ? '▶ ACTIVE QUEST' : st.icon + ' ' + st.label) + '</span>' +
         '<span class="quest-del" onclick="event.stopPropagation();cycleQuestStatus(' + q.id + ')" title="Cycle status">↻</span>' +
         '<span class="quest-del" onclick="event.stopPropagation();deleteQuest(' + q.id + ')" title="Remove quest">✕</span>' +
       '</div>';

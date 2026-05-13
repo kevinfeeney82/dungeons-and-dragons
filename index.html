@@ -725,7 +725,10 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
 
     <!-- Campaign Name -->
     <div class="modal-section">
-      <div class="modal-section-title">Campaign Name</div>
+      <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Campaign Name</span>
+        <button type="button" onclick="randomiseCampaignName()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:2px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(212,168,67,0.18)'" onmouseout="this.style.background='rgba(140,90,20,0.3)'" title="Generate a name based on your settings">🎲 Randomise</button>
+      </div>
       <div class="field-row single">
         <div class="field">
           <input type="text" id="camp-name" placeholder="e.g. The Vale of Shadows, Curse of the Iron Throne..." maxlength="60">
@@ -3158,6 +3161,111 @@ function deleteRosterHero(rosterIdx) {
   showToast(name + ' removed from roster.');
 }
 
+// ── CAMPAIGN NAME RANDOMISER ──
+const CAMPAIGN_NAME_PARTS = {
+  classic_fantasy: {
+    prefixes: ['The','Chronicles of','The Legend of','Tales of','Saga of','The','Echoes of','Shadows of','Whispers of','The Quest for','Curse of','The Fall of','Rise of','The Wrath of','Heirs of'],
+    subjects: ['the Dragon Throne','the Lost Kingdom','the Ancient Prophecy','the Shattered Crown','the Arcane Sanctum','the Forgotten Vale','the Silver Keep','the Iron Tower','the Crimson Citadel','the Sunken City','the Cursed Blade','the Eternal Flame','the Dark Forest','the Sacred Order','the Fallen Heroes'],
+  },
+  dark_gothic: {
+    prefixes: ['The','Blood of','Dusk of','Shadows of','The Curse of','Nightfall','The Ruin of','Dark Omens of','The Wailing of','Beneath the'],
+    subjects: ['the Withered Crown','the Black Cathedral','the Haunted Bloodline','Eternal Night','the Pale Court','the Crimson Mist','the Dying Light','the Forsaken Manor','the Screaming Vault','the Broken Covenant','the Ashen Throne','the Ravaged Crypt'],
+  },
+  nautical: {
+    prefixes: ['The','Voyage of','Tides of','Storm of','Plunder of','The Hunt for','Wake of','Fury of','The Legend of'],
+    subjects: ['the Sea Serpent','the Ghost Fleet','the Crimson Tide','the Sunken Treasure','the Iron Compass','the Tempest King','the Kraken\'s Wrath','the Cursed Horizon','the Black Sails','the Lost Armada','the Drowned God'],
+  },
+  underdark: {
+    prefixes: ['The','Depths of','Beneath','Whispers from','The Dark Heart of','Shadows of','The Silence of'],
+    subjects: ['the Obsidian City','the Lightless Deep','the Fungal Kingdom','the Spider Queen','the Deep Roads','the Stone Labyrinth','the Blind Eye','the Forgotten Dark','the Echoing Abyss','the Myconid Spire'],
+  },
+  political: {
+    prefixes: ['The','Game of','War of','The Fall of','Betrayal of','The','Intrigue of','Blood of'],
+    subjects: ['the Iron Throne','the Noble Houses','the Broken Alliance','the Assassin\'s Court','the Silver Council','the Royal Succession','Crimson Crowns','the Hidden Conspiracy','the Poisoned Chalice','the Masquerade'],
+  },
+  post_apocalyptic: {
+    prefixes: ['The','Ashes of','Ruins of','The Last','Survivors of','After','The','Dust of'],
+    subjects: ['the Fallen Empire','the Last City','the Dead World','the Iron Wastes','the Broken Sky','the Scavengers','the Dying Age','the Ember Throne','the Final March'],
+  },
+  eastern: {
+    prefixes: ['The','Path of','Honour of','Shadow of','The Last','Spirit of','Way of','Blood of'],
+    subjects: ['the Jade Emperor','the Silent Blade','the Dragon Court','the Fallen Shogunate','the Spirit Realm','the Iron Lotus','the Sacred Mountain','the Ronin\'s Oath','the Crimson Moon'],
+  },
+  planar: {
+    prefixes: ['The','Echoes Across','War of','The','Fractures of','Beyond','The Infinite'],
+    subjects: ['the Planes','the Astral Sea','the Shattered Realm','the Celestial War','the Infernal Pact','the Outer Darkness','the Void Between Worlds','the Planar Convergence','the God\'s Graveyard'],
+  },
+};
+
+const TONE_MODIFIERS = {
+  epic_heroic:      ['of Legend','the Eternal','of Destiny','the Glorious','Triumphant','of the Ages'],
+  gritty_realistic: ['of Blood','the Bitter','of Ruin','the Grim','the Unforgiving','of Dust and Iron'],
+  mystery_horror:   ['of Dread','the Forgotten','of Whispers','the Haunted','of Dark Secrets','Unseen'],
+  swashbuckling:    ['the Daring','of Fortune','the Bold','of Adventure','the Grand','the Audacious'],
+};
+
+const LENGTH_SUFFIXES = {
+  oneshot: ['— One Night','— A Single Candle','— The Final Hour'],
+  short:   ['','',''],  // no suffix for short
+  epic:    ['— An Epic Saga','— The Complete Chronicles','— A Legacy'],
+};
+
+function randomiseCampaignName() {
+  // Read current selections from the form
+  const setting = document.querySelector('[data-group="setting"].selected')?.dataset.value || campaign.setting || 'classic_fantasy';
+  const tone    = document.querySelector('[data-group="tone"].selected')?.dataset.value    || campaign.tone    || 'epic_heroic';
+  const length  = document.querySelector('[data-group="length"].selected')?.dataset.value  || campaign.length  || 'oneshot';
+
+  const parts  = CAMPAIGN_NAME_PARTS[setting] || CAMPAIGN_NAME_PARTS.classic_fantasy;
+  const prefix  = parts.prefixes[Math.floor(Math.random() * parts.prefixes.length)];
+  const subject = parts.subjects[Math.floor(Math.random() * parts.subjects.length)];
+
+  // Occasionally add a tone modifier (40% chance)
+  let name = prefix + ' ' + subject;
+  if (Math.random() < 0.4) {
+    const mods = TONE_MODIFIERS[tone] || TONE_MODIFIERS.epic_heroic;
+    const mod = mods[Math.floor(Math.random() * mods.length)];
+    // Insert before or after
+    if (Math.random() < 0.5 && !name.startsWith('The ')) {
+      name = mod + ' ' + name;
+    } else {
+      name = name + ' ' + mod;
+    }
+  }
+
+  // Occasionally add length suffix (20% chance, only for oneshot/epic)
+  const suffixes = LENGTH_SUFFIXES[length] || [''];
+  const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+  if (suffix) name = name + suffix;
+
+  // Animate the name appearing
+  const inp = document.getElementById('camp-name');
+  inp.value = '';
+  inp.style.borderColor = 'rgba(212,168,67,0.8)';
+  let i = 0;
+  const chars = name.split('');
+  const timer = setInterval(() => {
+    inp.value += chars[i++];
+    if (i >= chars.length) {
+      clearInterval(timer);
+      setTimeout(() => inp.style.borderColor = '', 600);
+    }
+  }, 28);
+}
+
+// Auto-update name when settings change
+function attachCampaignNameAutoUpdate() {
+  document.querySelectorAll('.campaign-card, .hook-item, .diff-btn').forEach(el => {
+    el.addEventListener('click', () => {
+      // Small delay to let selection update first
+      setTimeout(() => {
+        const inp = document.getElementById('camp-name');
+        if (!inp.value.trim()) randomiseCampaignName();
+      }, 50);
+    });
+  });
+}
+
 // ── CAMPAIGN CREATOR ──
 let campaign = {
   name: '',
@@ -3177,6 +3285,8 @@ function openCampaignFromParty() {
 
 function openCampaignCreator() {
   document.getElementById('camp-name').value = campaign.name || '';
+  // Generate a name if none set
+  if (!campaign.name) { setTimeout(randomiseCampaignName, 80); }
   document.getElementById('camp-notes').value = campaign.notes || '';
   document.getElementById('camp-custom-hook').value = campaign.customHook || '';
   document.querySelectorAll('[data-group="setting"]').forEach(el =>
@@ -3192,6 +3302,8 @@ function openCampaignCreator() {
   toggleCustomHook(campaign.hook === 'custom');
   document.getElementById('campaign-error').textContent = '';
   document.getElementById('campaign-overlay').classList.remove('hidden');
+  // Attach auto-update listeners
+  setTimeout(attachCampaignNameAutoUpdate, 100);
 }
 
 function closeCampaignCreator() {

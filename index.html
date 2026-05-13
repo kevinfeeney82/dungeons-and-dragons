@@ -1005,9 +1005,15 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
     <div id="narration-bar" style="display:flex;align-items:center;gap:8px;padding:5px 20px;background:rgba(35,26,12,0.98);border-bottom:1px solid rgba(180,130,50,0.2);flex-shrink:0;flex-wrap:wrap;">
       <button id="narration-toggle" onclick="toggleNarration()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.45);color:#a07848;padding:4px 12px;border-radius:2px;cursor:pointer;transition:all 0.2s;white-space:nowrap;" onmouseover="this.style.color='#ffd040';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseout="if(!this.dataset.on){this.style.color='#a07848';this.style.borderColor='rgba(140,100,40,0.45)'}">🔊 NARRATION</button>
       <button id="narration-stop" onclick="stopNarration()" style="display:none;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(160,60,50,0.5);color:#c04030;padding:4px 10px;border-radius:2px;cursor:pointer;">■ STOP</button>
-      <select id="voice-select" onchange="setVoice(this.value)" style="background:rgba(42,30,12,0.95);border:1px solid rgba(180,130,50,0.4);color:#d0aa70;font-family:'Crimson Text',serif;font-size:12px;padding:3px 6px;border-radius:2px;outline:none;max-width:180px;cursor:pointer;"></select>
+      <select id="voice-select" onchange="setVoice(this.value)" style="background:rgba(42,30,12,0.95);border:1px solid rgba(180,130,50,0.4);color:#d0aa70;font-family:'Crimson Text',serif;font-size:12px;padding:3px 6px;border-radius:2px;outline:none;max-width:200px;cursor:pointer;"></select>
       <button onclick="cycleSpeed()" id="speed-btn" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.4);color:#a07848;padding:4px 9px;border-radius:2px;cursor:pointer;" onmouseover="this.style.color='#ffd040'" onmouseout="this.style.color='#a07848'">1x</button>
-      <div id="el-key-row" style="display:flex;gap:6px;align-items:center;">
+      <!-- Google TTS key row -->
+      <div id="google-key-row" style="display:none;gap:6px;align-items:center;">
+        <input type="password" id="google-key-input" placeholder="Google API key (AIza...)..." style="background:rgba(42,30,12,0.95);border:1px solid rgba(180,130,50,0.4);color:#f0d898;font-family:'Crimson Text',serif;font-size:12px;padding:3px 8px;border-radius:2px;outline:none;width:160px;">
+        <button onclick="saveGoogleKey()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:3px 10px;border-radius:2px;cursor:pointer;">SAVE</button>
+      </div>
+      <!-- ElevenLabs key row -->
+      <div id="el-key-row" style="display:none;gap:6px;align-items:center;">
         <input type="password" id="el-key-input" placeholder="ElevenLabs API key..." style="background:rgba(42,30,12,0.95);border:1px solid rgba(180,130,50,0.4);color:#f0d898;font-family:'Crimson Text',serif;font-size:12px;padding:3px 8px;border-radius:2px;outline:none;width:155px;">
         <button onclick="saveElevenLabsKey()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:3px 10px;border-radius:2px;cursor:pointer;">SAVE</button>
       </div>
@@ -1671,14 +1677,18 @@ let narrationEnabled = false;
 let narrationSpeed = 1.0;
 let currentUtterance = null;
 let currentAudio = null;
+let narrationVoice = null;
+
+// Provider state
+let narrationProvider = '__browser__'; // '__browser__', '__google__', or EL voice ID
 let elevenLabsKey = '';
-let elevenLabsVoiceId = 'bIHbv24MWmeRgasZH58o'; // Will — deep, gravelly, perfect DM voice
-let narrationVoice = null; // browser fallback voice
+let googleTTSKey = '';
+let googleVoiceName = 'en-GB-Neural2-D'; // default — deep British male
 
 const SPEEDS = [0.8, 1.0, 1.25, 1.5, 1.8];
 let speedIdx = 1;
 
-// ElevenLabs voice options — all great for D&D narration
+// ElevenLabs voices
 const EL_VOICES = [
   { id: 'bIHbv24MWmeRgasZH58o', name: 'Will (Deep, Gravelly)' },
   { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Narrative, Rich)' },
@@ -1690,17 +1700,62 @@ const EL_VOICES = [
   { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam (Raspy, Intense)' },
 ];
 
+// Google Cloud TTS voices — best for D&D narration
+const GOOGLE_VOICES = [
+  { name: 'en-GB-Neural2-D', label: 'British Male (Neural2-D) ★' },
+  { name: 'en-GB-Neural2-B', label: 'British Male (Neural2-B)' },
+  { name: 'en-GB-Wavenet-D', label: 'British Male (WaveNet-D)' },
+  { name: 'en-GB-Wavenet-B', label: 'British Male (WaveNet-B)' },
+  { name: 'en-US-Neural2-J', label: 'US Male Deep (Neural2-J)' },
+  { name: 'en-US-Neural2-D', label: 'US Male (Neural2-D)' },
+  { name: 'en-US-Wavenet-D', label: 'US Male (WaveNet-D)' },
+  { name: 'en-US-Wavenet-B', label: 'US Male (WaveNet-B)' },
+  { name: 'en-AU-Neural2-D', label: 'Australian Male (Neural2-D)' },
+  { name: 'en-AU-Wavenet-D', label: 'Australian Male (WaveNet-D)' },
+];
+
 function initNarration() {
-  // Build voice selector
   const select = document.getElementById('voice-select');
-  select.innerHTML = '<option value="__browser__">🔊 Browser Voice (free)</option>';
-  EL_VOICES.forEach(v => {
-    const opt = document.createElement('option');
-    opt.value = v.id;
-    opt.textContent = '✦ ' + v.name;
-    select.appendChild(opt);
-  });
-  select.value = elevenLabsVoiceId;
+
+  function buildVoiceList() {
+    const current = select.value || narrationProvider;
+    select.innerHTML = '';
+
+    // Browser option
+    const browserOpt = document.createElement('option');
+    browserOpt.value = '__browser__';
+    browserOpt.textContent = '🔊 Browser Voice (free)';
+    select.appendChild(browserOpt);
+
+    // Google Cloud TTS group
+    const gGroup = document.createElement('optgroup');
+    gGroup.label = '☁ Google Cloud TTS (1M free/month)';
+    GOOGLE_VOICES.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = '__google__:' + v.name;
+      opt.textContent = v.label;
+      gGroup.appendChild(opt);
+    });
+    select.appendChild(gGroup);
+
+    // ElevenLabs group
+    const elGroup = document.createElement('optgroup');
+    elGroup.label = '✦ ElevenLabs (premium quality)';
+    EL_VOICES.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = '__el__:' + v.id;
+      opt.textContent = v.name;
+      elGroup.appendChild(opt);
+    });
+    select.appendChild(elGroup);
+
+    // Restore selection
+    select.value = current;
+    if (!select.value) select.value = '__browser__';
+    updateKeyFieldVisibility(select.value);
+  }
+
+  buildVoiceList();
 
   // Load browser voices for fallback
   if (window.speechSynthesis) {
@@ -1721,17 +1776,37 @@ function initNarration() {
     window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
   }
 
-  // Show/hide ElevenLabs key field based on selection
   select.addEventListener('change', () => {
-    const isEL = select.value !== '__browser__';
-    elevenLabsVoiceId = isEL ? select.value : null;
-    document.getElementById('el-key-row').style.display = isEL ? 'flex' : 'none';
-    if (isEL && !elevenLabsKey) {
-      document.getElementById('narration-status').textContent = 'Enter ElevenLabs key →';
-    } else {
-      document.getElementById('narration-status').textContent = '';
-    }
+    narrationProvider = select.value;
+    updateKeyFieldVisibility(select.value);
   });
+}
+
+function updateKeyFieldVisibility(val) {
+  const elRow = document.getElementById('el-key-row');
+  const gRow = document.getElementById('google-key-row');
+  const status = document.getElementById('narration-status');
+  if (elRow) elRow.style.display = val.startsWith('__el__') ? 'flex' : 'none';
+  if (gRow) gRow.style.display = val.startsWith('__google__') ? 'flex' : 'none';
+  if (val.startsWith('__google__') && !googleTTSKey) {
+    status.textContent = 'Enter Google API key →';
+  } else if (val.startsWith('__el__') && !elevenLabsKey) {
+    status.textContent = 'Enter ElevenLabs key →';
+  } else if (!val.startsWith('__browser__') && (googleTTSKey || elevenLabsKey)) {
+    status.textContent = narrationEnabled ? 'auto-reads DM messages' : '';
+  } else {
+    status.textContent = '';
+  }
+}
+
+function saveGoogleKey() {
+  const inp = document.getElementById('google-key-input');
+  const key = inp.value.trim();
+  if (!key) return;
+  googleTTSKey = key;
+  inp.value = '';
+  document.getElementById('narration-status').textContent = '✓ Google TTS ready';
+  showToast('Google Cloud TTS activated! 1M free chars/month.');
 }
 
 function saveElevenLabsKey() {
@@ -1768,11 +1843,7 @@ function toggleNarration() {
 }
 
 function setVoice(val) {
-  if (val === '__browser__') {
-    elevenLabsVoiceId = null;
-  } else {
-    elevenLabsVoiceId = val;
-  }
+  narrationProvider = val;
 }
 
 function cycleSpeed() {
@@ -1800,53 +1871,59 @@ async function speakText(text, btnEl) {
   if (btnEl) { btnEl.textContent = '⏹'; btnEl.dataset.speaking = '1'; }
   document.getElementById('narration-stop').style.display = 'inline-block';
 
-  const useEL = elevenLabsVoiceId && elevenLabsKey;
+  const prov = narrationProvider;
 
-  if (useEL) {
-    await speakElevenLabs(clean, btnEl);
+  if (prov.startsWith('__google__') && googleTTSKey) {
+    const voiceName = prov.split(':')[1] || googleVoiceName;
+    await speakGoogleTTS(clean, voiceName, btnEl);
+  } else if (prov.startsWith('__el__') && elevenLabsKey) {
+    const voiceId = prov.split(':')[1];
+    await speakElevenLabs(clean, voiceId, btnEl);
   } else {
     speakBrowser(clean, btnEl);
   }
 }
 
-async function speakElevenLabs(text, btnEl) {
+async function speakGoogleTTS(text, voiceName, btnEl) {
   try {
+    const langCode = voiceName.substring(0, 5); // e.g. en-GB
     const response = await fetch(
-      'https://api.elevenlabs.io/v1/text-to-speech/' + elevenLabsVoiceId + '/stream',
+      'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + googleTTSKey,
       {
         method: 'POST',
-        headers: {
-          'xi-api-key': elevenLabsKey,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_turbo_v2_5',
-          voice_settings: {
-            stability: 0.45,
-            similarity_boost: 0.82,
-            style: 0.35,
-            use_speaker_boost: true
+          input: { text },
+          voice: {
+            languageCode: langCode,
+            name: voiceName,
+            ssmlGender: 'MALE'
+          },
+          audioConfig: {
+            audioEncoding: 'MP3',
+            speakingRate: narrationSpeed,
+            pitch: -2.0,
+            volumeGainDb: 1.0,
           }
         })
-      });
+      }
+    );
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      const msg = err.detail?.message || 'ElevenLabs error ' + response.status;
-      showToast('ElevenLabs: ' + msg);
-      speakBrowser(text, btnEl); // fallback
+      const msg = (err.error && err.error.message) || 'Google TTS error ' + response.status;
+      showToast('Google TTS: ' + msg);
+      speakBrowser(text, btnEl);
       return;
     }
 
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    currentAudio = new Audio(url);
-    currentAudio.playbackRate = narrationSpeed;
+    const data = await response.json();
+    const audioData = 'data:audio/mp3;base64,' + data.audioContent;
+    currentAudio = new Audio(audioData);
+    currentAudio.playbackRate = 1.0; // already set via speakingRate
 
     currentAudio.onended = () => {
       currentAudio = null;
-      URL.revokeObjectURL(url);
       if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
       document.getElementById('narration-stop').style.display = 'none';
     };
@@ -1855,9 +1932,54 @@ async function speakElevenLabs(text, btnEl) {
       if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
       document.getElementById('narration-stop').style.display = 'none';
     };
-
     await currentAudio.play();
 
+  } catch (err) {
+    showToast('Google TTS error: ' + err.message);
+    speakBrowser(text, btnEl);
+    if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+    document.getElementById('narration-stop').style.display = 'none';
+  }
+}
+
+async function speakElevenLabs(text, voiceId, btnEl) {
+  try {
+    const response = await fetch(
+      'https://api.elevenlabs.io/v1/text-to-speech/' + voiceId + '/stream',
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': elevenLabsKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.45, similarity_boost: 0.82, style: 0.35, use_speaker_boost: true }
+        })
+      }
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      showToast('ElevenLabs: ' + ((err.detail && err.detail.message) || 'Error ' + response.status));
+      speakBrowser(text, btnEl);
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.playbackRate = narrationSpeed;
+    currentAudio.onended = () => {
+      currentAudio = null; URL.revokeObjectURL(url);
+      if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+      document.getElementById('narration-stop').style.display = 'none';
+    };
+    currentAudio.onerror = () => {
+      currentAudio = null;
+      if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+      document.getElementById('narration-stop').style.display = 'none';
+    };
+    await currentAudio.play();
   } catch (err) {
     showToast('Narration error: ' + err.message);
     if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
@@ -1892,8 +2014,7 @@ function stopNarration() {
   currentUtterance = null;
   document.getElementById('narration-stop').style.display = 'none';
   document.querySelectorAll('[title="Read aloud"]').forEach(b => {
-    b.textContent = '🔊';
-    b.dataset.speaking = '';
+    b.textContent = '🔊'; b.dataset.speaking = '';
   });
 }
 

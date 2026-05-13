@@ -256,92 +256,186 @@ html, body {
 .empty-slots { font-size: 13px; color: #a07848; font-style: italic; text-align: center; padding: 20px; }
 
 @media (max-width: 960px) {
-  /* Inside Google Sites iframe - use natural scroll layout, not fixed viewport */
   html, body { height: auto; overflow-x: hidden; overflow-y: auto; }
 
   .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto auto;
-    height: auto;
-    min-height: 600px;
+    display: flex; flex-direction: column;
+    height: auto; min-height: 100vh;
+    width: 100%; overflow-x: hidden;
   }
 
-  .top-bar { grid-column:1; grid-row:1; padding: 10px 12px 8px; }
-  .title-area h1 { font-size: 15px; letter-spacing: 1px; }
+  /* ── TOP BAR ── */
+  .top-bar {
+    padding: 8px 10px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .title-area { gap: 8px; min-width: 0; flex-shrink: 1; }
+  .title-area h1 { font-size: 14px; letter-spacing: 0.5px; white-space: nowrap; }
   .title-area .subtitle { display: none; }
-  .title-area .torch-icon { font-size: 18px; }
-  .top-btn { font-size: 9px; padding: 4px 8px; }
+  .title-area .torch-icon { font-size: 16px; flex-shrink: 0; }
+  .top-right { gap: 4px; flex-shrink: 0; flex-wrap: nowrap; overflow: hidden; }
+  .top-btn {
+    font-size: 9px; padding: 4px 7px; white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
   .session-badge { display: none; }
-  .top-right { gap: 6px; }
 
-  /* Character panel - collapsible accordion */
+  /* ── NARRATION BAR ── */
+  #narration-bar {
+    padding: 4px 10px !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #narration-bar::-webkit-scrollbar { display: none; }
+  #narration-toggle { font-size: 9px !important; padding: 3px 8px !important; white-space: nowrap; }
+  #voice-select { font-size: 11px !important; max-width: 130px !important; }
+  #speed-btn { font-size: 9px !important; padding: 3px 6px !important; }
+  #narration-status { font-size: 10px !important; white-space: nowrap; }
+
+  /* ── LEFT PANEL (collapsible) ── */
   .left-panel {
-    grid-column:1; grid-row:2;
+    flex-shrink: 0;
     border-right: none;
     border-bottom: 1px solid rgba(180,130,50,0.2);
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.35s ease;
   }
-  .left-panel.panel-open { max-height: 600px; }
+  .left-panel.panel-open { max-height: 70vh; overflow-y: auto; }
   .party-strip { padding: 8px 12px; }
-  .char-details { padding: 10px 12px; gap: 12px; }
-  .strip-hero { width: 30px; height: 30px; font-size: 14px; }
+  .char-details { padding: 10px 12px; gap: 10px; }
+  .strip-hero { width: 28px; height: 28px; font-size: 13px; }
+  .stats-grid { grid-template-columns: repeat(6,1fr); gap: 4px; }
+  .stat-val { font-size: 14px; }
 
-  /* Main chat area */
-  .main-area { grid-column:1; grid-row:3; }
+  /* ── MAIN STORY AREA ── */
+  .main-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
   .story-log {
+    flex: 1;
     overflow-y: auto;
-    padding: 14px 14px;
-    min-height: 280px;
-    max-height: 50vh;
+    padding: 12px 12px;
     -webkit-overflow-scrolling: touch;
+    min-height: 200px;
+    max-height: 55vh;
   }
-  .input-area { padding: 8px 12px 10px; }
-  .speaking-as { font-size: 9px; margin-bottom: 5px; }
-  .action-input { font-size: 15px; min-height: 38px; }
-  .send-btn { font-size: 11px; padding: 8px 12px; height: 38px; }
-  .quick-actions { gap: 5px; margin-top: 6px; }
-  .quick-btn { font-size: 10px; padding: 3px 7px; }
 
-  /* Right panel - horizontal wrap */
+  /* Make messages fill width properly */
+  .msg-dm .msg-body {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    padding: 10px 12px !important;
+    word-break: break-word;
+  }
+  .msg-player .msg-body {
+    font-size: 14px !important;
+    padding: 8px 12px !important;
+    word-break: break-word;
+  }
+  .msg-dm .msg-header, .msg-player .msg-header {
+    font-size: 10px !important;
+  }
+
+  /* ── INPUT AREA ── */
+  .input-area { padding: 8px 10px 10px; flex-shrink: 0; }
+  .speaking-as { font-size: 9px; margin-bottom: 4px; }
+  .action-input {
+    font-size: 14px; min-height: 40px; padding: 8px 10px;
+  }
+  .send-btn {
+    font-size: 11px; padding: 8px 10px; height: 40px;
+    letter-spacing: 0.5px; white-space: nowrap;
+  }
+  .quick-actions { gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .quick-btn { font-size: 10px; padding: 4px 8px; }
+
+  /* DM option buttons */
+  .dm-option-btn { font-size: 13px; padding: 8px 12px; }
+
+  /* Item pickup bar */
+  .item-pickup-bar { gap: 5px; }
+  .item-pickup-btn { font-size: 12px; padding: 3px 9px; }
+
+  /* ── RIGHT PANEL ── */
   .right-panel {
-    grid-column:1; grid-row:4;
+    flex-shrink: 0;
     border-left: none;
     border-top: 1px solid rgba(180,130,50,0.2);
-    flex-direction: row; flex-wrap: wrap; gap: 10px; padding: 12px;
+    flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 10px 12px;
   }
   .right-panel > div { flex: 1; min-width: 140px; }
+  .quest-item { padding: 8px 10px; }
+  .location-box { padding: 9px 10px; }
 
-  .bottom-bar { grid-column:1; grid-row:5; padding: 5px 12px; }
-  .bottom-bar span { font-size: 9px; }
-
-  .save-bar { grid-column:1; grid-row:6 !important; padding: 5px 10px; gap: 5px; }
-  .save-btn { font-size: 9px; padding: 4px 7px; }
+  /* ── BOTTOM / SAVE BARS ── */
+  .bottom-bar { padding: 4px 10px; }
+  .bottom-bar span { font-size: 8px; letter-spacing: 0; }
+  .save-bar { padding: 4px 8px; gap: 5px; }
+  .save-btn { font-size: 9px; padding: 3px 7px; }
   .save-status { font-size: 9px; min-width: 0; }
 
-  /* Modals slide up from bottom */
-  .modal { padding: 18px 16px; max-height: 85vh; border-radius: 3px 3px 0 0; }
+  /* ── MODALS ── */
+  .modal {
+    padding: 16px 14px; max-height: 90vh;
+    border-radius: 4px 4px 0 0; width: 100%;
+  }
   .modal-overlay { padding: 0; align-items: flex-end; }
   .modal-title { font-size: 16px; }
-  .party-modal, .saves-modal, .import-modal { max-width: 100%; }
+  .modal-sub { font-size: 13px; }
+  .party-modal, .saves-modal, .import-modal, .campaign-modal, .roster-modal { max-width: 100%; }
+  .field input, .field select, .field textarea { font-size: 15px; padding: 7px 9px; }
+  .field label { font-size: 9px; }
+  .begin-btn { font-size: 12px; padding: 11px; }
+  .cancel-btn { font-size: 11px; padding: 10px 14px; }
 
-  .stat-creator-grid { grid-template-columns: repeat(3,1fr); }
+  /* Stats grid in creator */
+  .stat-creator-grid { grid-template-columns: repeat(3,1fr); gap: 6px; }
+  .stat-creator-box input { font-size: 18px; padding: 6px 2px; }
+
+  /* Field rows */
+  .field-row { grid-template-columns: 1fr; gap: 10px; }
   .field-row.three { grid-template-columns: 1fr 1fr; }
-  .field-row { grid-template-columns: 1fr; }
-  .party-strip { padding: 7px 10px 6px; }
 
+  /* Campaign cards */
+  .campaign-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .campaign-card { padding: 10px; }
+  .campaign-card-icon { font-size: 18px; }
+  .difficulty-row { gap: 5px; }
+  .diff-btn { padding: 7px 4px; font-size: 10px; }
+
+  /* Party strip */
+  .party-strip { padding: 6px 10px; }
+
+  /* Item picker tabs */
+  .item-tab { font-size: 9px; padding: 4px 8px; }
+  #item-grid { padding: 7px 8px !important; gap: 5px !important; }
+  .item-chip { font-size: 12px; padding: 3px 8px; }
+
+  /* Panel overlay */
   .panel-overlay {
     display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4); z-index: 140;
+    background: rgba(0,0,0,0.5); z-index: 140;
   }
   .panel-overlay.show { display: block; }
+
+  /* HP adjuster */
+  .hp-adjuster { gap: 5px; }
+  .hp-adj-btn { width: 28px; height: 28px; }
+
+  /* Portrait grid */
+  .portrait-grid { gap: 6px; }
+  .portrait-opt { width: 38px; height: 38px; font-size: 18px; }
 }
 
-@media (max-width: 380px) {
-  .title-area h1 { font-size: 13px; }
-  .top-btn { font-size: 8px; padding: 3px 6px; }
-  .story-log { max-height: 40vh; }
+@media (max-width: 400px) {
+  .title-area h1 { font-size: 12px; }
+  .top-btn { font-size: 8px; padding: 3px 5px; }
+  .msg-dm .msg-body { font-size: 14px !important; }
+  .campaign-grid { grid-template-columns: 1fr; }
+  .difficulty-row { flex-wrap: wrap; }
 }
 .import-modal { max-width: 680px; }
 .import-step { display: none; }

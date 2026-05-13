@@ -1949,12 +1949,18 @@ async function speakText(text, btnEl) {
   const clean = cleanTextForSpeech(text);
   if (!clean) return;
 
-  if (btnEl) { btnEl.textContent = '⏹'; btnEl.dataset.speaking = '1'; }
+  // Immediate visual feedback — loading pulse
+  if (btnEl) {
+    btnEl.textContent = '⌛';
+    btnEl.dataset.speaking = '1';
+    btnEl.classList.add('speak-loading');
+  }
   document.getElementById('narration-stop').style.display = 'inline-block';
+  document.getElementById('narration-status').textContent = 'loading...';
 
   const prov = narrationProvider;
-
   const workerActive = WORKER_URL && WORKER_URL !== '';
+
   if (prov.startsWith('__google__') && (googleTTSKey || workerActive)) {
     const voiceName = prov.split(':')[1] || googleVoiceName;
     await speakGoogleTTS(clean, voiceName, btnEl);
@@ -1962,6 +1968,9 @@ async function speakText(text, btnEl) {
     const voiceId = prov.split(':')[1];
     await speakElevenLabs(clean, voiceId, btnEl);
   } else {
+    // Browser TTS is instant — no loading state needed
+    if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '⏹'; }
+    document.getElementById('narration-status').textContent = narrationEnabled ? 'auto-reads DM messages' : '';
     speakBrowser(clean, btnEl);
   }
 }
@@ -2012,20 +2021,29 @@ async function speakGoogleTTS(text, voiceName, btnEl) {
     currentAudio = new Audio(audioData);
     currentAudio.playbackRate = 1.0; // already set via speakingRate
 
+    currentAudio.oncanplaythrough = () => {
+      // Audio ready — swap loading to playing state
+      if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '⏹'; }
+      document.getElementById('narration-status').textContent = '▶ playing...';
+    };
     currentAudio.onended = () => {
       currentAudio = null;
-      if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+      if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
       document.getElementById('narration-stop').style.display = 'none';
+      document.getElementById('narration-status').textContent = narrationEnabled ? 'auto-reads DM messages' : '';
     };
     currentAudio.onerror = () => {
       currentAudio = null;
-      if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+      if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
       document.getElementById('narration-stop').style.display = 'none';
+      document.getElementById('narration-status').textContent = '';
     };
     await currentAudio.play();
 
   } catch (err) {
     showToast('Google TTS error: ' + err.message);
+    if (btnEl) { btnEl.classList.remove('speak-loading'); }
+    document.getElementById('narration-status').textContent = '';
     speakBrowser(text, btnEl);
     if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
     document.getElementById('narration-stop').style.display = 'none';
@@ -2059,15 +2077,21 @@ async function speakElevenLabs(text, voiceId, btnEl) {
     const url = URL.createObjectURL(blob);
     currentAudio = new Audio(url);
     currentAudio.playbackRate = narrationSpeed;
+    currentAudio.oncanplaythrough = () => {
+      if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '⏹'; }
+      document.getElementById('narration-status').textContent = '▶ playing...';
+    };
     currentAudio.onended = () => {
       currentAudio = null; URL.revokeObjectURL(url);
-      if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+      if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
       document.getElementById('narration-stop').style.display = 'none';
+      document.getElementById('narration-status').textContent = narrationEnabled ? 'auto-reads DM messages' : '';
     };
     currentAudio.onerror = () => {
       currentAudio = null;
-      if (btnEl) { btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
+      if (btnEl) { btnEl.classList.remove('speak-loading'); btnEl.textContent = '🔊'; btnEl.dataset.speaking = ''; }
       document.getElementById('narration-stop').style.display = 'none';
+      document.getElementById('narration-status').textContent = '';
     };
     await currentAudio.play();
   } catch (err) {
@@ -2103,7 +2127,12 @@ function stopNarration() {
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   currentUtterance = null;
   document.getElementById('narration-stop').style.display = 'none';
+  const statusEl = document.getElementById('narration-status');
+  if (statusEl && statusEl.textContent === '▶ playing...') {
+    statusEl.textContent = narrationEnabled ? 'auto-reads DM messages' : '';
+  }
   document.querySelectorAll('[title="Read aloud"]').forEach(b => {
+    b.classList.remove('speak-loading');
     b.textContent = '🔊'; b.dataset.speaking = '';
   });
 }

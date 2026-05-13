@@ -448,8 +448,16 @@ html, body {
     </div>
 
     <div class="modal-section">
-      <div class="modal-section-title">Ability Scores</div>
+      <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Ability Scores</span>
+        <div style="display:flex;gap:6px;">
+          <button onclick="rollAllStats()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:3px 12px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Roll 4d6 drop lowest for all stats">🎲 Roll All</button>
+          <button onclick="rollStatStandard()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.4);color:#a07848;padding:3px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Standard array: 15,14,13,12,10,8">📋 Standard</button>
+          <button onclick="resetStats()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:transparent;border:1px solid rgba(100,70,30,0.35);color:#706040;padding:3px 10px;border-radius:2px;cursor:pointer;transition:all 0.2s;" title="Reset all to 10">↺ Reset</button>
+        </div>
+      </div>
       <div class="stat-creator-grid" id="stat-creator-grid"></div>
+      <div id="stat-roll-log" style="font-size:11px;color:#807050;font-style:italic;font-family:'Crimson Text',serif;min-height:16px;margin-top:4px;text-align:right;"></div>
     </div>
 
     <div class="modal-section">
@@ -1031,7 +1039,7 @@ const statGrid = document.getElementById('stat-creator-grid');
 STATS.forEach(stat => {
   const box = document.createElement('div');
   box.className = 'stat-creator-box';
-  box.innerHTML = `<label>${stat}</label><input type="number" id="cs-${stat}" value="10" min="1" max="30"><div class="stat-modifier" id="csm-${stat}">+0</div>`;
+  box.innerHTML = `<label>${stat}</label><input type="number" id="cs-${stat}" value="10" min="1" max="30"><div class="stat-modifier" id="csm-${stat}">+0</div><button onclick="rollSingleStat('${stat}')" title="Roll 4d6 drop lowest" style="font-size:10px;background:transparent;border:none;color:#806040;cursor:pointer;padding:1px;line-height:1;">🎲</button>`;
   statGrid.appendChild(box);
   box.querySelector('input').addEventListener('input', e => {
     document.getElementById('csm-'+stat).textContent = statMod(e.target.value);
@@ -1859,6 +1867,63 @@ function getActiveQuestContext() {
   const q = quests.find(q => q.id === activeQuestId);
   if (!q) return '';
   return 'ACTIVE QUEST: ' + q.title + (q.desc ? ' — ' + q.desc : '');
+}
+
+// ── STAT ROLLING ──
+function roll4d6DropLowest() {
+  const rolls = [1,2,3,4].map(() => Math.floor(Math.random()*6)+1);
+  const total = rolls.reduce((a,b)=>a+b,0) - Math.min(...rolls);
+  return { total, rolls };
+}
+
+function rollSingleStat(stat) {
+  const { total, rolls } = roll4d6DropLowest();
+  const inp = document.getElementById('cs-'+stat);
+  inp.value = total;
+  document.getElementById('csm-'+stat).textContent = statMod(total);
+  // Flash the input
+  inp.style.color = '#ffd040';
+  inp.style.borderColor = 'rgba(212,168,67,0.8)';
+  setTimeout(() => { inp.style.color = ''; inp.style.borderColor = ''; }, 600);
+  const dropped = Math.min(...rolls);
+  document.getElementById('stat-roll-log').textContent =
+    stat + ': rolled [' + rolls.join(', ') + '] dropped ' + dropped + ' = ' + total;
+}
+
+function rollAllStats() {
+  const results = [];
+  STATS.forEach(stat => {
+    const { total, rolls } = roll4d6DropLowest();
+    document.getElementById('cs-'+stat).value = total;
+    document.getElementById('csm-'+stat).textContent = statMod(total);
+    // Flash each
+    const inp = document.getElementById('cs-'+stat);
+    inp.style.color = '#ffd040';
+    inp.style.borderColor = 'rgba(212,168,67,0.8)';
+    setTimeout(() => { inp.style.color = ''; inp.style.borderColor = ''; }, 800);
+    results.push(stat + ':' + total);
+  });
+  const total = STATS.reduce((sum, s) => sum + (parseInt(document.getElementById('cs-'+s).value)||10), 0);
+  document.getElementById('stat-roll-log').textContent =
+    results.join('  ') + '  (total: ' + total + ')';
+}
+
+function rollStatStandard() {
+  const standard = [15, 14, 13, 12, 10, 8];
+  STATS.forEach((stat, i) => {
+    document.getElementById('cs-'+stat).value = standard[i];
+    document.getElementById('csm-'+stat).textContent = statMod(standard[i]);
+  });
+  document.getElementById('stat-roll-log').textContent =
+    'Standard array applied: 15, 14, 13, 12, 10, 8';
+}
+
+function resetStats() {
+  STATS.forEach(stat => {
+    document.getElementById('cs-'+stat).value = 10;
+    document.getElementById('csm-'+stat).textContent = '+0';
+  });
+  document.getElementById('stat-roll-log').textContent = 'Stats reset to 10.';
 }
 
 // ── HERO ROSTER ──

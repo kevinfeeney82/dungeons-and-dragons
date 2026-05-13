@@ -691,14 +691,17 @@ html, body {
     <div class="modal-section">
       <div class="modal-section-title">Starting Inventory</div>
 
-      <!-- Item category tabs -->
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;" id="item-tabs">
-        <button class="item-tab active" onclick="showItemTab('weapons',this)">⚔ Weapons</button>
-        <button class="item-tab" onclick="showItemTab('armour',this)">🛡 Armour</button>
-        <button class="item-tab" onclick="showItemTab('magic',this)">🔮 Magic</button>
-        <button class="item-tab" onclick="showItemTab('potions',this)">⚗ Potions</button>
-        <button class="item-tab" onclick="showItemTab('tools',this)">🎒 Tools & Gear</button>
-        <button class="item-tab" onclick="showItemTab('gold',this)">💰 Gold</button>
+      <!-- Item category tabs + suggest button -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;" id="item-tabs">
+          <button class="item-tab active" onclick="showItemTab('weapons',this)">⚔ Weapons</button>
+          <button class="item-tab" onclick="showItemTab('armour',this)">🛡 Armour</button>
+          <button class="item-tab" onclick="showItemTab('magic',this)">🔮 Magic</button>
+          <button class="item-tab" onclick="showItemTab('potions',this)">⚗ Potions</button>
+          <button class="item-tab" onclick="showItemTab('tools',this)">🎒 Tools & Gear</button>
+          <button class="item-tab" onclick="showItemTab('gold',this)">💰 Gold</button>
+        </div>
+        <button onclick="suggestStartingItems()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(60,40,100,0.35);border:1px solid rgba(140,100,200,0.5);color:#c0a0f0;padding:5px 12px;border-radius:2px;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0;" onmouseover="this.style.background='rgba(100,70,180,0.35)';this.style.borderColor='rgba(180,140,240,0.7)'" onmouseout="this.style.background='rgba(60,40,100,0.35)';this.style.borderColor='rgba(140,100,200,0.5)'" title="Suggest 5 starting items for your class and race">✨ Suggest Items</button>
       </div>
 
       <!-- Item grids per category -->
@@ -2963,6 +2966,177 @@ function updateSwitchHeroBtn() {
   }
 }
 
+// ── STARTING ITEM SUGGESTER ──
+const CLASS_ITEM_POOLS = {
+  Barbarian: {
+    weapons:  ['Greataxe','Handaxe','Handaxe','Javelin','Javelin','Javelin','Javelin','Longsword','Battleaxe','Maul','Greatclub','Flail'],
+    armour:   ['Hide Armour','Shield','Studded Leather'],
+    tools:    ['Rope (50ft)','Torch x5','Rations (5 days)','Waterskin','Tinderbox','Backpack','Bedroll','Crowbar'],
+    potions:  ['Potion of Healing','Potion of Healing','Antitoxin'],
+    gold:     ['10 gold pieces','25 gold pieces'],
+  },
+  Bard: {
+    weapons:  ['Rapier','Shortsword','Dagger','Dagger','Longbow','Hand Crossbow'],
+    armour:   ['Leather Armour','Shield'],
+    tools:    ['Musical Instrument','Rope (50ft)','Tinderbox','Torch x5','Backpack','Bedroll','Disguise Kit'],
+    potions:  ['Potion of Healing','Potion of Healing'],
+    magic:    ['Spellbook','Component Pouch','Scroll of Charm Person'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Cleric: {
+    weapons:  ['Mace','Warhammer','Flail','Quarterstaff +1','Shortsword'],
+    armour:   ['Chain Mail','Scale Mail','Shield','Breastplate'],
+    tools:    ['Holy Symbol','Rope (50ft)','Torch x5','Rations (5 days)','Backpack','Bedroll','Healer\'s Kit'],
+    potions:  ['Potion of Healing','Potion of Healing','Potion of Healing'],
+    magic:    ['Scroll of Cure Wounds','Scroll of Bless','Scroll of Guiding Bolt'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Druid: {
+    weapons:  ['Quarterstaff +1','Scimitar','Dagger','Dagger','Sickle','Spear'],
+    armour:   ['Leather Armour','Hide Armour','Shield','Studded Leather'],
+    tools:    ['Druidic Focus','Rope (50ft)','Torch x5','Herbalism Kit','Backpack','Bedroll','Rations (5 days)'],
+    potions:  ['Potion of Healing','Potion of Healing','Antitoxin'],
+    magic:    ['Scroll of Speak with Animals','Scroll of Entangle','Scroll of Healing Word'],
+    gold:     ['10 gold pieces','25 gold pieces'],
+  },
+  Fighter: {
+    weapons:  ['Longsword','Battleaxe','Greataxe','Greatsword','Warhammer','Rapier','Longbow','Hand Crossbow','Light Crossbow','Shortsword'],
+    armour:   ['Chain Mail','Breastplate','Half Plate','Scale Mail','Shield','Shield'],
+    tools:    ['Rope (50ft)','Torch x5','Rations (5 days)','Tinderbox','Backpack','Bedroll','Crowbar'],
+    potions:  ['Potion of Healing','Potion of Healing'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Monk: {
+    weapons:  ['Shortsword','Quarterstaff +1','Dagger','Dagger','Handaxe','Spear'],
+    armour:   ['Backpack','Rope (50ft)'],
+    tools:    ['Rope (50ft)','Torch x5','Rations (5 days)','Tinderbox','Backpack','Bedroll'],
+    potions:  ['Potion of Healing','Potion of Healing','Antitoxin'],
+    gold:     ['10 gold pieces','25 gold pieces'],
+  },
+  Paladin: {
+    weapons:  ['Longsword','Warhammer','Battleaxe','Greatsword','Flail','Morningstar'],
+    armour:   ['Chain Mail','Breastplate','Half Plate','Shield','Shield','Tower Shield'],
+    tools:    ['Holy Symbol','Rope (50ft)','Torch x5','Rations (5 days)','Backpack','Healer\'s Kit'],
+    potions:  ['Potion of Healing','Potion of Healing','Potion of Greater Healing'],
+    magic:    ['Scroll of Bless','Scroll of Cure Wounds','Scroll of Divine Favor'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Ranger: {
+    weapons:  ['Longbow','Shortbow','Shortsword','Shortsword','Longsword','Dagger','Handaxe','Handaxe','Rapier'],
+    armour:   ['Leather Armour','Scale Mail','Studded Leather','Shield'],
+    tools:    ['Rope (50ft)','Torch x5','Rations (5 days)','Tinderbox','Backpack','Bedroll','Navigator\'s Tools'],
+    potions:  ['Potion of Healing','Potion of Healing','Antitoxin'],
+    magic:    ['Scroll of Hunter\'s Mark','Scroll of Cure Wounds','Scroll of Speak with Animals'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Rogue: {
+    weapons:  ['Rapier','Shortsword','Shortsword','Dagger','Dagger','Hand Crossbow','Shortbow'],
+    armour:   ['Leather Armour','Studded Leather'],
+    tools:    ['Thieves Tools','Rope (50ft)','Torch x5','Tinderbox','Backpack','Crowbar','Grappling Hook'],
+    potions:  ['Potion of Healing','Potion of Healing'],
+    magic:    ['Scroll of Disguise Self','Scroll of Invisibility'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Sorcerer: {
+    weapons:  ['Quarterstaff +1','Dagger','Dagger','Light Crossbow'],
+    armour:   ['Arcane Focus','Component Pouch'],
+    tools:    ['Rope (50ft)','Torch x5','Rations (5 days)','Backpack','Bedroll','Tinderbox'],
+    potions:  ['Potion of Healing','Potion of Healing'],
+    magic:    ['Arcane Focus','Component Pouch','Scroll of Detect Magic','Scroll of Mage Armor','Scroll of Magic Missile','Scroll of Shield'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Warlock: {
+    weapons:  ['Dagger','Dagger','Quarterstaff +1','Light Crossbow','Shortsword'],
+    armour:   ['Leather Armour','Studded Leather'],
+    tools:    ['Arcane Focus','Rope (50ft)','Torch x5','Tinderbox','Backpack','Bedroll'],
+    potions:  ['Potion of Healing','Potion of Healing'],
+    magic:    ['Arcane Focus','Component Pouch','Scroll of Hex','Scroll of Armor of Agathys','Scroll of Detect Magic'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+  Wizard: {
+    weapons:  ['Quarterstaff +1','Dagger','Dagger','Staff of Power','Staff of the Magi'],
+    armour:   ['Arcane Focus','Component Pouch','Spellbook'],
+    tools:    ['Rope (50ft)','Torch x5','Rations (5 days)','Backpack','Bedroll','Tinderbox','Magnifying Glass'],
+    potions:  ['Potion of Healing','Potion of Healing'],
+    magic:    ['Spellbook','Arcane Focus','Component Pouch','Scroll of Detect Magic','Scroll of Identify','Scroll of Mage Armor','Scroll of Magic Missile','Scroll of Shield','Scroll of Sleep','Scroll of Thunderwave'],
+    gold:     ['25 gold pieces','50 gold pieces'],
+  },
+};
+
+// Racial bonus items — added as 6th item if applicable
+const RACE_BONUS_ITEMS = {
+  Dwarf:     ['Healer\'s Kit','Tinderbox','Hammer & Pitons','50 gold pieces'],
+  Elf:       ['Rope of Climbing','Cloak of Elvenkind','Boots of Elvenkind','Scroll of Detect Magic'],
+  Halfling:  ['Rope (50ft)','25 gold pieces','Tinderbox','Rations (5 days)'],
+  'Half-Elf':['Disguise Kit','25 gold pieces','Musical Instrument','Rope (50ft)'],
+  'Half-Orc':['Potion of Healing','Handaxe','Torch x5','Crowbar'],
+  Tiefling:  ['Scroll of Hellish Rebuke','Potion of Fire Breath','25 gold pieces','Arcane Focus'],
+  Gnome:     ['Tinker\'s Tools','Magnifying Glass','Scroll of Identify','25 gold pieces'],
+  Dragonborn:['Potion of Fire Breath','50 gold pieces','Scale Mail','Javelin'],
+  Aasimar:   ['Holy Symbol','Potion of Healing','Scroll of Cure Wounds','50 gold pieces'],
+  Tabaxi:    ['Rope of Climbing','Boots of Elvenkind','Dagger','Tinderbox'],
+};
+
+function suggestStartingItems() {
+  const charClass = document.getElementById('c-class').value;
+  const race = document.getElementById('c-race').value;
+  const pool = CLASS_ITEM_POOLS[charClass];
+  if (!pool) return;
+
+  // Pick items from different categories to ensure variety
+  // Strategy: weapon, armour/defence, tool, potion, magic/gold
+  const categories = ['weapons','armour','tools','potions','magic','gold'];
+  const picked = [];
+
+  // Always get one weapon
+  const wpns = pool.weapons || [];
+  if (wpns.length) picked.push(wpns[Math.floor(Math.random() * wpns.length)]);
+
+  // Always get one armour/defence piece
+  const armr = pool.armour || [];
+  if (armr.length) picked.push(armr[Math.floor(Math.random() * armr.length)]);
+
+  // Always get one tool
+  const tools = pool.tools || [];
+  if (tools.length) picked.push(tools[Math.floor(Math.random() * tools.length)]);
+
+  // Always get one potion
+  const pots = pool.potions || [];
+  if (pots.length) picked.push(pots[Math.floor(Math.random() * pots.length)]);
+
+  // Get a magic item or gold — prefer magic for casters
+  const magic = pool.magic || [];
+  const gold = pool.gold || [];
+  const magicOrGold = magic.length > 0 && Math.random() < 0.6 ? magic : gold;
+  if (magicOrGold.length) {
+    const candidate = magicOrGold[Math.floor(Math.random() * magicOrGold.length)];
+    if (!picked.includes(candidate)) picked.push(candidate);
+  }
+
+  // Add a racial bonus item as 6th if available
+  const racialPool = RACE_BONUS_ITEMS[race] || [];
+  if (racialPool.length && picked.length < 6) {
+    const racialItem = racialPool[Math.floor(Math.random() * racialPool.length)];
+    if (!picked.includes(racialItem)) picked.push(racialItem);
+  }
+
+  // Replace selected items with suggested ones
+  selectedItems = [...new Set(picked)];
+  const added = selectedItems.length;
+
+  syncInventoryTextarea();
+  renderSelectedItems();
+  renderItemGrid();
+
+  document.getElementById('stat-roll-log') &&
+    (document.getElementById('stat-roll-log').textContent =
+      'Suggested ' + added + ' item' + (added !== 1 ? 's' : '') + ' for ' + race + ' ' + charClass + ' — click again for different suggestions!');
+
+  // Show the selected items list
+  const listEl = document.getElementById('selected-items-list');
+  if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // ── ITEM PICKER ──
 const ITEM_CATALOGUE = {
   weapons: [
@@ -3147,31 +3321,57 @@ const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
 let currentRecommendation = null;
 
+// AC and HP recommendations per class
+const CLASS_DEFENCE = {
+  Barbarian: { armour:'Unarmoured Defence (10 + DEX mod + CON mod)', hpNote:'d12 + CON mod per level. Highest HP in the game.', startingAC: (s) => 10 + Math.floor((s.DEX-10)/2) + Math.floor((s.CON-10)/2) },
+  Bard:      { armour:'Light Armour (Leather = 11 + DEX mod)', hpNote:'d8 + CON mod per level.', startingAC: (s) => 11 + Math.floor((s.DEX-10)/2) },
+  Cleric:    { armour:'Medium Armour + Shield (Chain Shirt 13 + DEX max 2 + Shield 2 = 17)', hpNote:'d8 + CON mod per level.', startingAC: (s) => 15 + Math.min(2, Math.floor((s.DEX-10)/2)) + 2 },
+  Druid:     { armour:'Medium Armour — no metal (Hide 12 + DEX max 2 = 14)', hpNote:'d8 + CON mod per level.', startingAC: (s) => 12 + Math.min(2, Math.floor((s.DEX-10)/2)) },
+  Fighter:   { armour:'Heavy Armour (Chain Mail = 16) or Medium + Shield', hpNote:'d10 + CON mod per level. Second highest HP.', startingAC: (s) => 16 },
+  Monk:      { armour:'Unarmoured Defence (10 + DEX mod + WIS mod)', hpNote:'d8 + CON mod per level.', startingAC: (s) => 10 + Math.floor((s.DEX-10)/2) + Math.floor((s.WIS-10)/2) },
+  Paladin:   { armour:'Heavy Armour + Shield (Chain Mail 16 + Shield 2 = 18)', hpNote:'d10 + CON mod per level.', startingAC: (s) => 18 },
+  Ranger:    { armour:'Medium Armour (Scale Mail 14 + DEX max 2)', hpNote:'d10 + CON mod per level.', startingAC: (s) => 14 + Math.min(2, Math.floor((s.DEX-10)/2)) },
+  Rogue:     { armour:'Light Armour (Leather 11 + DEX mod)', hpNote:'d8 + CON mod per level.', startingAC: (s) => 11 + Math.floor((s.DEX-10)/2) },
+  Sorcerer:  { armour:'No armour (10 + DEX mod). Consider Mage Armour spell (13 + DEX mod).', hpNote:'d6 + CON mod per level. Lowest HP — stay back!', startingAC: (s) => 13 + Math.floor((s.DEX-10)/2) },
+  Warlock:   { armour:'Light Armour (Leather 11 + DEX mod)', hpNote:'d8 + CON mod per level.', startingAC: (s) => 11 + Math.floor((s.DEX-10)/2) },
+  Wizard:    { armour:'No armour (10 + DEX mod). Consider Mage Armour spell (13 + DEX mod).', hpNote:'d6 + CON mod per level. Lowest HP — stay well back!', startingAC: (s) => 13 + Math.floor((s.DEX-10)/2) },
+};
+
 function showStatRecommendation() {
   const charClass = document.getElementById('c-class').value;
   const race = document.getElementById('c-race').value;
+  const level = parseInt(document.getElementById('c-level').value) || 1;
   const classPriority = CLASS_STAT_PRIORITY[charClass];
-  const raceBonuses = RACE_BONUSES[race] || {};
+  const classDef = CLASS_DEFENCE[charClass];
+  const raceBonuses = Object.assign({}, RACE_BONUSES[race] || {});
 
   if (!classPriority) return;
 
-  // Build recommended stats: assign standard array in priority order
+  // Build recommended stats using standard array in priority order
   const stats = { STR:0, DEX:0, CON:0, INT:0, WIS:0, CHA:0 };
-  classPriority.order.forEach((stat, i) => {
-    stats[stat] = STANDARD_ARRAY[i];
-  });
+  classPriority.order.forEach((stat, i) => { stats[stat] = STANDARD_ARRAY[i]; });
 
   // Apply racial bonuses
   const raceNote = raceBonuses.note || '';
   delete raceBonuses.note;
   const finalStats = {};
-  STATS.forEach(s => {
-    finalStats[s] = stats[s] + (raceBonuses[s] || 0);
-  });
+  STATS.forEach(s => { finalStats[s] = stats[s] + (raceBonuses[s] || 0); });
 
-  currentRecommendation = finalStats;
+  // Calculate HP
+  const classBenefits = LEVEL_BENEFITS[charClass] || {};
+  const hpDie = classBenefits.hpDie || 8;
+  const conMod = Math.floor((finalStats.CON - 10) / 2);
+  const avgHpPerLevel = Math.floor(hpDie / 2) + 1 + conMod;
+  const maxHp1st = hpDie + conMod;
+  const totalHp = maxHp1st + (Math.max(0, level - 1) * avgHpPerLevel);
 
-  // Show recommendation panel
+  // Calculate AC
+  const acFn = classDef ? classDef.startingAC : (s) => 10 + Math.floor((s.DEX-10)/2);
+  const recommendedAC = Math.max(10, acFn(finalStats));
+
+  currentRecommendation = { stats: finalStats, hp: totalHp, ac: recommendedAC };
+
+  // Render
   const panel = document.getElementById('stat-recommendation');
   const titleEl = document.getElementById('rec-title');
   const statsEl = document.getElementById('rec-stats');
@@ -3180,6 +3380,8 @@ function showStatRecommendation() {
   titleEl.textContent = 'RECOMMENDED FOR ' + charClass.toUpperCase() + ' (' + race.toUpperCase() + ')';
 
   statsEl.innerHTML = '';
+
+  // Stat chips
   STATS.forEach(s => {
     const hasBonus = raceBonuses[s] > 0;
     const chip = document.createElement('div');
@@ -3192,36 +3394,73 @@ function showStatRecommendation() {
     statsEl.appendChild(chip);
   });
 
-  // Build note
+  // HP chip
+  const hpChip = document.createElement('div');
+  hpChip.style.cssText = 'display:flex;flex-direction:column;align-items:center;background:rgba(40,15,15,0.9);border:1px solid rgba(180,60,60,0.45);border-radius:2px;padding:5px 8px;min-width:54px;';
+  hpChip.innerHTML =
+    '<div style="font-family:Cinzel,serif;font-size:9px;color:#904040;letter-spacing:1px;">HP</div>' +
+    '<div style="font-family:Cinzel,serif;font-size:18px;font-weight:600;color:#e07070;">' + totalHp + '</div>' +
+    '<div style="font-size:9px;color:#904040;">Lv ' + level + '</div>';
+  statsEl.appendChild(hpChip);
+
+  // AC chip
+  const acChip = document.createElement('div');
+  acChip.style.cssText = 'display:flex;flex-direction:column;align-items:center;background:rgba(15,25,40,0.9);border:1px solid rgba(60,100,180,0.45);border-radius:2px;padding:5px 8px;min-width:44px;';
+  acChip.innerHTML =
+    '<div style="font-family:Cinzel,serif;font-size:9px;color:#4060a0;letter-spacing:1px;">AC</div>' +
+    '<div style="font-family:Cinzel,serif;font-size:18px;font-weight:600;color:#7090e0;">' + recommendedAC + '</div>' +
+    '<div style="font-size:9px;color:#4060a0;">base</div>';
+  statsEl.appendChild(acChip);
+
+  // Notes
   const priorityList = classPriority.order.map((s,i) => s + '(' + STANDARD_ARRAY[i] + ')').join(' › ');
   noteEl.innerHTML =
-    '<strong style="color:#c09040;">' + charClass + ':</strong> ' + classPriority.note +
+    '<strong style="color:#c09040;">' + charClass + ':</strong> ' + classPriority.note + '<br>' +
+    '<strong style="color:#e07070;">❤ HP:</strong> ' + (classDef ? classDef.hpNote : '') + ' At level ' + level + ' with CON ' + finalStats.CON + ': <strong style="color:#e07070;">' + totalHp + ' HP</strong><br>' +
+    '<strong style="color:#7090e0;">🛡 AC:</strong> ' + (classDef ? classDef.armour : '') + ' = <strong style="color:#7090e0;">' + recommendedAC + '</strong>' +
     (raceNote ? '<br><strong style="color:#70a070;">' + race + ':</strong> ' + raceNote : '') +
-    '<br><span style="color:#605030;">Priority: ' + priorityList + '</span>';
+    '<br><span style="color:#605030;">Stat priority: ' + priorityList + '</span>';
 
   panel.style.display = 'block';
-
-  // Scroll to recommendation
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function applyRecommendedStats() {
   if (!currentRecommendation) return;
+  const rec = currentRecommendation;
+
+  // Apply stats
   STATS.forEach(s => {
     const inp = document.getElementById('cs-' + s);
     if (inp) {
-      inp.value = currentRecommendation[s];
-      document.getElementById('csm-' + s).textContent = statMod(currentRecommendation[s]);
-      // Flash
+      inp.value = rec.stats[s];
+      document.getElementById('csm-' + s).textContent = statMod(rec.stats[s]);
       inp.style.color = '#ffd040';
       inp.style.borderColor = 'rgba(212,168,67,0.8)';
       setTimeout(() => { inp.style.color = ''; inp.style.borderColor = ''; }, 700);
     }
   });
+
+  // Apply HP
+  if (rec.hp) {
+    const hpCur = document.getElementById('c-hp-cur');
+    const hpMax = document.getElementById('c-hp-max');
+    if (hpCur) { hpCur.value = rec.hp; hpCur.style.borderColor = 'rgba(200,80,80,0.8)'; setTimeout(() => hpCur.style.borderColor = '', 700); }
+    if (hpMax) { hpMax.value = rec.hp; hpMax.style.borderColor = 'rgba(200,80,80,0.8)'; setTimeout(() => hpMax.style.borderColor = '', 700); }
+  }
+
+  // Apply AC
+  if (rec.ac) {
+    const acEl = document.getElementById('c-ac');
+    if (acEl) { acEl.value = rec.ac; acEl.style.borderColor = 'rgba(80,100,200,0.8)'; setTimeout(() => acEl.style.borderColor = '', 700); }
+  }
+
   const charClass = document.getElementById('c-class').value;
   const race = document.getElementById('c-race').value;
+  const level = document.getElementById('c-level').value;
   document.getElementById('stat-roll-log').textContent =
-    'Applied recommended stats for ' + race + ' ' + charClass;
+    'Applied recommended stats for Lvl ' + level + ' ' + race + ' ' + charClass +
+    (rec.hp ? ' · HP: ' + rec.hp : '') + (rec.ac ? ' · AC: ' + rec.ac : '');
   document.getElementById('stat-recommendation').style.display = 'none';
 }
 

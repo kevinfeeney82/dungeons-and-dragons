@@ -1118,7 +1118,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.6 — Prose option detection added</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.7 — Prose parser split fix</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -2705,23 +2705,21 @@ function parseDMOptions(text) {
   // ── Pass 2: If no structured options found, parse prose "do you X, or do you Y" ──
   if (options.length === 0) {
     const fullText = text.replace(/\n/g, ' ');
-    // Match patterns like: "do you X, Y, or Z?" or "will you X or Y?"
-    const proseMatch = fullText.match(/(?:do you|will you|would you|could you|shall you)[^?]*\?/gi);
+    // Find question sentences containing choices
+    const proseMatch = fullText.match(/(?:do you|will you|would you|could you|shall you)[^?]{10,200}\?/gi);
     if (proseMatch) {
       proseMatch.forEach(sentence => {
-        // Split on ", or ", " or ", ", and " etc
-        const stripped = sentence
-          .replace(/^(?:do you|will you|would you|shall you|could you)\s*/i, '')
-          .replace(/\?$/, '');
-        // Split by common conjunctions
-        const parts = stripped.split(/,?\s+or\s+|,?\s+and\s+|,\s+/);
-        parts.forEach((part, i) => {
+        // Only split on ", or " and " or " — NOT on plain "and" (which is within an option)
+        const stripped = sentence.replace(/\?$/, '');
+        // Split ONLY on the "or" conjunction that separates choices
+        const parts = stripped.split(/,\s+or\s+|\s+or\s+(?=do you|will you|pause|make|head|seek|inspect|check|go|visit|stay|return|explore)/i);
+        parts.forEach((part) => {
           const clean = part
             .replace(/^(?:do you|will you|would you|shall you|could you)\s*/i, '')
-            .replace(/^(?:pause to|make for|head to|seek out|choose to|decide to)\s*/i, '')
+            .replace(/^(?:pause to|make (?:straight )?for|head (?:straight )?(?:to|for)|seek out|choose to|decide to|go to|return to|visit)\s*/i, '')
             .trim();
-          if (clean.length > 4 && clean.length < 120 && !options.some(o => o.text.toLowerCase() === clean.toLowerCase())) {
-            const label = String.fromCharCode(65 + options.length); // A, B, C...
+          if (clean.length > 6 && clean.length < 100 && !options.some(o => o.text.toLowerCase().includes(clean.toLowerCase().substring(0, 20)))) {
+            const label = String.fromCharCode(65 + options.length);
             options.push({ label, text: capitalise(clean) });
           }
           if (options.length >= 4) return;
@@ -4640,7 +4638,18 @@ function loadSaveData(data) {
   gameStarted = data.gameStarted || false;
   conversationHistory = data.conversationHistory || [];
   if (data.campaign) campaign = data.campaign;
-  if (data.quests) { quests = data.quests; activeQuestId = data.activeQuestId || null; nextQuestId = data.nextQuestId || 10; renderQuests(); }
+  if (data.quests && data.quests.length > 0) {
+    quests = data.quests; activeQuestId = data.activeQuestId || null; nextQuestId = data.nextQuestId || 10;
+  } else {
+    // No quests in save — generate a starting quest from campaign settings
+    quests = []; activeQuestId = null; nextQuestId = 1;
+    const firstQ = getFirstQuestFromCampaign();
+    if (firstQ) {
+      quests.push({ id: nextQuestId++, title: firstQ.title, desc: firstQ.desc, status: 'in_progress' });
+      activeQuestId = 1;
+    }
+  }
+  renderQuests();
 
   const log = document.getElementById('story-log');
   log.innerHTML = '';

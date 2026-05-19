@@ -600,6 +600,89 @@ html, body {
 .item-pickup-btn:hover { background: rgba(65,48,18,0.95); border-color: rgba(212,168,67,0.65); color: #ffd040; }
 .item-pickup-btn .pickup-icon { font-size: 12px; }
 .item-pickup-btn.picked { border-color: rgba(70,140,70,0.5); color: #70b870; background: rgba(20,50,20,0.5); cursor: default; }
+
+/* ══════════════════════════════════
+   HERO ROSTER
+══════════════════════════════════ */
+.roster-modal { max-width: 620px; }
+.roster-hero-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; max-height: 360px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(140,100,40,0.3) transparent; }
+.roster-hero-list::-webkit-scrollbar { width: 4px; }
+.roster-hero-list::-webkit-scrollbar-thumb { background: rgba(140,100,40,0.3); }
+.roster-hero-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(42,30,12,0.8); border: 1px solid rgba(160,120,50,0.35); border-radius: 3px; transition: all 0.15s; }
+.roster-hero-row:hover { border-color: rgba(212,168,67,0.45); background: rgba(55,40,16,0.9); }
+.roster-portrait { font-size: 20px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(55,40,16,0.8); border: 1px solid rgba(180,130,50,0.35); flex-shrink: 0; }
+.roster-info { flex: 1; min-width: 0; }
+.roster-name { font-family: 'Cinzel', serif; font-size: 13px; color: #ffd040; margin-bottom: 2px; }
+.roster-desc { font-size: 12px; color: #b09060; font-style: italic; }
+.roster-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.roster-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5px; padding: 5px 10px; border-radius: 2px; cursor: pointer; transition: all 0.15s; background: transparent; white-space: nowrap; }
+.roster-btn.add { border: 1px solid rgba(212,168,67,0.45); color: #ffd040; background: rgba(140,90,20,0.25); }
+.roster-btn.add:hover { background: rgba(212,168,67,0.18); border-color: rgba(212,168,67,0.7); }
+.roster-btn.del { border: 1px solid rgba(160,60,50,0.45); color: #c05040; }
+.roster-btn.del:hover { color: #e04040; border-color: rgba(200,70,60,0.6); background: rgba(120,30,20,0.2); }
+.roster-empty { font-size: 13px; color: #605030; font-style: italic; text-align: center; padding: 20px; }
+
+/* ══════════════════════════════════
+   TRADE MODAL
+══════════════════════════════════ */
+#trade-overlay .modal { max-width: 520px; }
+#trade-from-list > div:hover { border-color: rgba(212,168,67,0.5) !important; background: rgba(55,40,16,0.9) !important; }
+
+/* ══════════════════════════════════
+   DEBRIEF / LEVEL UP MODAL
+══════════════════════════════════ */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════
+   SAVE BAR BUTTONS
+══════════════════════════════════ */
+.save-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; padding: 5px 10px; border-radius: 2px; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.save-btn.primary { background: transparent; border: 1px solid rgba(140,100,40,0.45); color: #a07848; }
+.save-btn.primary:hover { color: #ffd040; border-color: rgba(212,168,67,0.65); background: rgba(212,168,67,0.08); }
+.save-btn.danger { background: transparent; border: 1px solid rgba(120,50,40,0.45); color: #904030; }
+.save-btn.danger:hover { color: #e04030; border-color: rgba(180,60,50,0.65); background: rgba(120,30,20,0.15); }
+#debrief-btn { border-color: rgba(180,140,50,0.55) !important; color: #ffd040 !important; background: rgba(140,90,20,0.25) !important; }
+#debrief-btn:hover { background: rgba(212,168,67,0.18) !important; }
+
+/* ══════════════════════════════════
+   NARRATION BAR CONSISTENCY
+══════════════════════════════════ */
+#narration-bar select optgroup { background: #1e1608; color: #a07848; font-style: normal; font-size: 11px; }
+#narration-bar select option { background: #1e1608; color: #d0aa70; }
+
+/* ══════════════════════════════════
+   MODAL CONSISTENCY
+══════════════════════════════════ */
+.modal-section-title { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px; color: #a07848; margin-bottom: 10px; text-transform: uppercase; }
+.modal-sub { font-family: 'Crimson Text', serif; font-size: 14px; color: #907050; font-style: italic; margin-bottom: 16px; }
+.error-msg { font-size: 12px; color: #c05040; min-height: 16px; margin-bottom: 4px; font-style: italic; }
+.begin-btn { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1.5px; background: rgba(140,90,20,0.35); border: 1px solid rgba(212,168,67,0.5); color: #ffd040; padding: 12px 20px; border-radius: 2px; cursor: pointer; transition: all 0.2s; }
+.begin-btn:hover { background: rgba(212,168,67,0.2); border-color: rgba(212,168,67,0.8); }
+.cancel-btn { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px; background: transparent; border: 1px solid rgba(140,100,40,0.4); color: #a07848; padding: 10px 16px; border-radius: 2px; cursor: pointer; transition: all 0.2s; }
+.cancel-btn:hover { color: #d0aa70; border-color: rgba(180,130,50,0.6); }
+
+/* ══════════════════════════════════
+   QUICK ACTIONS
+══════════════════════════════════ */
+.quick-btn { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5px; background: transparent; border: 1px solid rgba(140,100,40,0.35); color: #907050; padding: 5px 10px; border-radius: 2px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.quick-btn:hover { color: #d0aa70; border-color: rgba(180,130,50,0.55); background: rgba(60,45,15,0.5); }
+
+/* ══════════════════════════════════
+   PARTY STRIP
+══════════════════════════════════ */
+.strip-hero { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(140,100,40,0.4); background: rgba(38,27,11,0.9); display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; transition: all 0.2s; position: relative; flex-shrink: 0; }
+.strip-hero:hover { border-color: rgba(212,168,67,0.6); }
+.strip-hero.active-hero { border-color: #ffd040; box-shadow: 0 0 8px rgba(212,168,67,0.3); }
+
+/* ══════════════════════════════════
+   STAT RECOMMENDATION PANEL
+══════════════════════════════════ */
+#stat-recommendation { display: none; margin-bottom: 10px; background: rgba(20,14,6,0.9); border: 1px solid rgba(212,168,67,0.25); border-left: 3px solid rgba(212,168,67,0.5); border-radius: 0 3px 3px 0; padding: 10px 12px; }
+
+/* ══════════════════════════════════
+   ITEM PICKER TABS (mobile fix)
+══════════════════════════════════ */
+#item-tabs { row-gap: 5px; }
 </style>
 
   <!-- Tell Google Sites to resize the iframe to fit content -->
@@ -1154,7 +1237,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.4 — Roll detection robustness fix</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.5 — Full UI consistency pass</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1202,7 +1285,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <div>
         <div class="panel-label" style="display:flex;justify-content:space-between;align-items:center;">
           <span>Inventory</span>
-          <button onclick="openTrade()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.35);color:#a07848;padding:2px 7px;border-radius:2px;cursor:pointer;" title="Give items to another hero" id="trade-btn" style="display:none;">⇄ Trade</button>
+          <button onclick="openTrade()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.35);color:#a07848;padding:2px 7px;border-radius:2px;cursor:pointer;" title="Give items to another hero" id="trade-btn">⇄ Trade</button>
         </div>
         <div class="char-card">
           <ul class="inventory-list" id="display-inventory">

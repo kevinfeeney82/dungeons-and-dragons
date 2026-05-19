@@ -179,11 +179,11 @@ html, body {
 .input-area { padding: 12px 22px 16px; border-top: 1px solid rgba(180,130,50,0.2); background: rgba(38,28,14,0.95); flex-shrink: 0; }
 .speaking-as { font-family: 'Cinzel', serif; font-size: 10px; color: #c89848; letter-spacing: 1px; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
 .speaking-as span { color: #f0c830; }
-.input-row { display: flex; gap: 10px; align-items: flex-end; }
-.action-input { flex: 1; background: rgba(20,13,5,0.8); border: 1px solid rgba(180,130,50,0.6); color: #f8eecc; font-family: 'Crimson Text', serif; font-size: 16px; padding: 10px 14px; border-radius: 3px; resize: none; min-height: 42px; max-height: 120px; line-height: 1.5; outline: none; transition: border-color 0.2s; }
+.input-row { display: flex; gap: 8px; align-items: stretch; }
+.action-input { flex: 1; background: rgba(20,13,5,0.8); border: 1px solid rgba(180,130,50,0.6); color: #f8eecc; font-family: 'Crimson Text', serif; font-size: 16px; padding: 10px 14px; border-radius: 3px; resize: none; min-height: 52px; max-height: 120px; line-height: 1.5; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
 .action-input::placeholder { color: #a07848; font-style: italic; }
 .action-input:focus { border-color: rgba(212,168,67,0.5); }
-.send-btn { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.4); color: #ffd040; padding: 10px 18px; border-radius: 3px; cursor: pointer; white-space: nowrap; transition: all 0.2s; height: 42px; }
+.send-btn { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; background: rgba(140,90,20,0.3); border: 1px solid rgba(212,168,67,0.4); color: #ffd040; padding: 10px 18px; border-radius: 3px; cursor: pointer; white-space: nowrap; transition: all 0.2s; align-self: stretch; min-height: 52px; }
 .send-btn:hover { background: rgba(212,168,67,0.2); border-color: rgba(212,168,67,0.6); }
 .send-btn:active { transform: scale(0.96); }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -355,11 +355,11 @@ html, body {
   .input-area { padding: 8px 10px 10px; flex-shrink: 0; }
   .speaking-as { font-size: 9px; margin-bottom: 4px; }
   .action-input {
-    font-size: 14px; min-height: 40px; padding: 8px 10px;
+    font-size: 14px; min-height: 48px; padding: 8px 10px;
   }
   .send-btn {
-    font-size: 11px; padding: 8px 10px; height: 40px;
-    letter-spacing: 0.5px; white-space: nowrap;
+    font-size: 11px; padding: 8px 10px;
+    letter-spacing: 0.5px; white-space: nowrap; align-self: stretch; min-height: 48px;
   }
   .quick-actions { gap: 4px; margin-top: 6px; flex-wrap: wrap; }
   .quick-btn { font-size: 10px; padding: 4px 8px; }
@@ -1118,7 +1118,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.1 — Start campaign button added</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.6 — Prose option detection added</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1661,13 +1661,18 @@ STRICT RULES — YOU MUST FOLLOW THESE EXACTLY:
    - WAIT for the player to report the result before narrating what happens.
    - NEVER narrate the outcome of a roll before the player has made it.
 
-3. OPTIONS — FORMAT STRICTLY:
-   - When presenting choices, ALWAYS format them as a lettered list on separate lines:
+3. OPTIONS — FORMAT STRICTLY — THIS IS MANDATORY:
+   - NEVER present choices in prose form ("do you X or Y?").
+   - ALWAYS format choices as a lettered list on SEPARATE LINES with nothing else after:
    A) [option text]
    B) [option text]
    C) [option text]
-   - Every response that ends with a player decision should have 2-4 lettered options.
-   - Keep option text short (under 15 words each).
+   - Every response that ends with a player decision MUST have 2-4 lettered options in this exact format.
+   - Keep each option under 12 words.
+   - Example of WRONG format: "Do you enter the tavern or head to the castle?"
+   - Example of RIGHT format:
+   A) Enter the tavern to rest and gather information
+   B) Head straight to the castle gates
 
 4. CAMPAIGN IDENTITY:
    - This campaign is "${campName}" with a ${settingMap[campaign.setting]||'classic fantasy'} setting.
@@ -1691,6 +1696,18 @@ function startGame() {
   const names = party.map(h=>h.name).join(', ');
   addMessage('system', null, `⚔ ${names} enter${party.length===1?'s':''} the realm... ⚔`);
   updateDebriefBtn();
+
+  // Reset quests for new campaign — start fresh based on campaign hook
+  quests = [];
+  activeQuestId = null;
+  nextQuestId = 1;
+  // Add a first quest based on the campaign hook
+  const firstQuest = getFirstQuestFromCampaign();
+  if (firstQuest) {
+    quests.push({ id: nextQuestId++, title: firstQuest.title, desc: firstQuest.desc, status: 'in_progress' });
+    activeQuestId = 1;
+  }
+  renderQuests();
 
   // Auto-create a named save slot for this campaign
   const autoName = campaign.name || (names + "'s Campaign");
@@ -1757,7 +1774,7 @@ ${sessionText.substring(0, 8000)}` });
 
   const openingRequest = `Begin the campaign now. Write the opening scene based on the campaign settings — setting, tone, hook, and difficulty. Introduce the world, establish the atmosphere, and end with a clear prompt for ${active.name}${party.length > 1 ? ' and the party' : ''} to act. This is the very first message the player sees — make it vivid and compelling.`;
 
-  conversationHistory.push({ role: 'user', content: openingRequest });
+  conversationHistory.push({ role: 'user', content: openingRequest, hidden: true });
 
   const thinkEl = addThinking();
   const geminiContents = [
@@ -2336,13 +2353,51 @@ function toggleSpeakBtn(btn, text, event) {
   }
 }
 
+// ── QUEST GENERATION FROM CAMPAIGN ──
+function getFirstQuestFromCampaign() {
+  const hookQuests = {
+    mysterious_summons: {
+      title: 'Answer the Summons',
+      desc: 'A cryptic message has drawn you here. Discover who sent it and why.'
+    },
+    tavern_rumour: {
+      title: 'Follow the Rumour',
+      desc: 'A rumour heard in the tavern points to danger — or opportunity. Investigate.'
+    },
+    ambushed: {
+      title: 'Find Who Attacked You',
+      desc: 'The ambush was no accident. Discover who ordered it and why.'
+    },
+    escaped_prisoners: {
+      title: 'Escape and Find Answers',
+      desc: 'You woke up imprisoned with no memory of how. Find a way out and learn the truth.'
+    },
+    hired: {
+      title: 'Complete the Contract',
+      desc: 'You have been hired for a job. See it through — but watch for complications.'
+    },
+    prophecy: {
+      title: 'Fulfil the Prophecy',
+      desc: 'An ancient prophecy has named you. Whether you believe it or not, others do.'
+    },
+    custom: {
+      title: campaign.name || 'The Adventure Begins',
+      desc: campaign.customHook || 'Your adventure is just beginning. The path ahead is unclear.'
+    },
+  };
+
+  // Use campaign name as quest title if set
+  const base = hookQuests[campaign.hook] || hookQuests.mysterious_summons;
+  return {
+    title: campaign.name ? campaign.name : base.title,
+    desc: base.desc + (campaign.notes ? ' ' + campaign.notes : '')
+  };
+}
+
 // ── QUESTS ──
-let quests = [
-  { id: 1, title: 'The Vale of Shadows', desc: 'Investigate the disappearances north of Millhaven. Reward: 500gp.', status: 'in_progress' },
-  { id: 2, title: "Elara's Warning", desc: 'The merchant seemed terrified. Find out what she truly knows.', status: 'discovered' }
-];
-let activeQuestId = 1;
-let nextQuestId = 3;
+let quests = [];
+let activeQuestId = null;
+let nextQuestId = 1;
 
 const QUEST_STATUS = {
   in_progress: { icon: '▶', label: 'ACTIVE QUEST', color: '#ffd040' },
@@ -2359,16 +2414,43 @@ function renderQuests() {
     return;
   }
   list.innerHTML = '';
-  quests.forEach(q => {
+
+  // Find active quest index
+  const activeIdx = quests.findIndex(q => q.id === activeQuestId);
+
+  // Show: active quest + the one immediately before it (previous quest)
+  const visibleIds = new Set();
+  if (activeIdx >= 0) visibleIds.add(quests[activeIdx].id);
+  if (activeIdx > 0) visibleIds.add(quests[activeIdx - 1].id);
+  // If no active quest, show the last two
+  if (visibleIds.size === 0) {
+    quests.slice(-2).forEach(q => visibleIds.add(q.id));
+  }
+
+  // Show count of hidden quests
+  const hiddenCount = quests.length - visibleIds.size;
+  if (hiddenCount > 0) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:10px;color:#4a3820;font-style:italic;font-family:Cinzel,serif;letter-spacing:0.5px;padding:2px 0 6px;text-align:right;cursor:pointer;';
+    hint.textContent = '+' + hiddenCount + ' more quest' + (hiddenCount > 1 ? 's' : '') + ' (manage in party)';
+    hint.onclick = () => openPartyManager();
+    list.appendChild(hint);
+  }
+
+  quests.filter(q => visibleIds.has(q.id)).forEach(q => {
     const st = QUEST_STATUS[q.status] || QUEST_STATUS.discovered;
+    const isActive = q.id === activeQuestId;
+    const isPrev = !isActive && visibleIds.has(q.id);
     const div = document.createElement('div');
-    div.className = 'quest-item' + (q.id === activeQuestId ? ' quest-active' : '');
+    div.className = 'quest-item' + (isActive ? ' quest-active' : '');
+    div.style.opacity = isPrev && !isActive ? '0.65' : '1';
     div.onclick = () => setActiveQuest(q.id);
     div.innerHTML =
+      (isPrev && !isActive ? '<div style="font-family:Cinzel,serif;font-size:9px;color:#4a3820;letter-spacing:1px;margin-bottom:3px;">PREVIOUS</div>' : '') +
       '<div class="quest-title">' + q.title + '</div>' +
       '<div class="quest-desc">' + q.desc + '</div>' +
       '<div class="quest-status">' +
-        '<span style="color:' + (q.id === activeQuestId ? '#ffd040' : st.color) + ';' + (q.id === activeQuestId ? 'font-size:11px;letter-spacing:1px;' : '') + '">' + (q.id === activeQuestId ? '▶ ACTIVE QUEST' : st.icon + ' ' + st.label) + '</span>' +
+        '<span style="color:' + (isActive ? '#ffd040' : st.color) + ';' + (isActive ? 'font-size:11px;letter-spacing:1px;' : '') + '">' + (isActive ? '▶ ACTIVE QUEST' : st.icon + ' ' + st.label) + '</span>' +
         '<span class="quest-del" onclick="event.stopPropagation();cycleQuestStatus(' + q.id + ')" title="Cycle status">↻</span>' +
         '<span class="quest-del" onclick="event.stopPropagation();deleteQuest(' + q.id + ')" title="Remove quest">✕</span>' +
       '</div>';
@@ -2377,11 +2459,22 @@ function renderQuests() {
 }
 
 function setActiveQuest(id) {
+  if (id === activeQuestId) return; // already active
+
+  if (gameStarted && activeQuestId) {
+    const current = quests.find(q => q.id === activeQuestId);
+    const next = quests.find(q => q.id === id);
+    if (current && next) {
+            const confirmed = confirm('Switch active quest from "' + current.title + '" to "' + next.title + '"? The DM will be told to focus on the new quest.');
+      if (!confirmed) return;
+    }
+  }
+
   activeQuestId = id;
   renderQuests();
   const q = quests.find(q => q.id === id);
   if (q && gameStarted) {
-    addMessage('system', null, '📜 Active quest: ' + q.title);
+    addMessage('system', null, '📜 Quest changed: now tracking "' + q.title + '"');
   }
 }
 
@@ -2594,16 +2687,12 @@ function parseDMOptions(text) {
   const options = [];
   const lines = text.split('\n');
 
+  // ── Pass 1: Look for explicit lettered/numbered list format ──
   lines.forEach(line => {
     const clean = line.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-–•]\s*/, '').trim();
-
-    // Match all common lettered/numbered formats:
-    // A) B) C)   A: B: C:   (A) (B) (C)   A. B. C.
-    // 1) 2) 3)   1. 2. 3.   Option A: ...
     let m = clean.match(/^\(?([A-Da-d])\)?[.):\s]+\s*(.+)/) ||
             clean.match(/^Option\s+([A-Da-d1-4])[.:)\s]+\s*(.+)/i) ||
             clean.match(/^([1-4])[.)]\s+(.+)/);
-
     if (m) {
       const label = m[1].toUpperCase();
       const optText = m[2].trim();
@@ -2613,7 +2702,39 @@ function parseDMOptions(text) {
     }
   });
 
+  // ── Pass 2: If no structured options found, parse prose "do you X, or do you Y" ──
+  if (options.length === 0) {
+    const fullText = text.replace(/\n/g, ' ');
+    // Match patterns like: "do you X, Y, or Z?" or "will you X or Y?"
+    const proseMatch = fullText.match(/(?:do you|will you|would you|could you|shall you)[^?]*\?/gi);
+    if (proseMatch) {
+      proseMatch.forEach(sentence => {
+        // Split on ", or ", " or ", ", and " etc
+        const stripped = sentence
+          .replace(/^(?:do you|will you|would you|shall you|could you)\s*/i, '')
+          .replace(/\?$/, '');
+        // Split by common conjunctions
+        const parts = stripped.split(/,?\s+or\s+|,?\s+and\s+|,\s+/);
+        parts.forEach((part, i) => {
+          const clean = part
+            .replace(/^(?:do you|will you|would you|shall you|could you)\s*/i, '')
+            .replace(/^(?:pause to|make for|head to|seek out|choose to|decide to)\s*/i, '')
+            .trim();
+          if (clean.length > 4 && clean.length < 120 && !options.some(o => o.text.toLowerCase() === clean.toLowerCase())) {
+            const label = String.fromCharCode(65 + options.length); // A, B, C...
+            options.push({ label, text: capitalise(clean) });
+          }
+          if (options.length >= 4) return;
+        });
+      });
+    }
+  }
+
   return options.slice(0, 4);
+}
+
+function capitalise(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function showDMOptions(options) {
@@ -4519,19 +4640,20 @@ function loadSaveData(data) {
   gameStarted = data.gameStarted || false;
   conversationHistory = data.conversationHistory || [];
   if (data.campaign) campaign = data.campaign;
-  if (data.quests) { quests = data.quests; activeQuestId = data.activeQuestId || null; nextQuestId = data.nextQuestId || 10; }
+  if (data.quests) { quests = data.quests; activeQuestId = data.activeQuestId || null; nextQuestId = data.nextQuestId || 10; renderQuests(); }
 
   const log = document.getElementById('story-log');
   log.innerHTML = '';
   conversationHistory.forEach(m => {
+    if (m.hidden) return; // skip seeded/context messages
     if (m.role === 'assistant') {
-      // Skip the brief "Understood" acknowledgement messages
-      if (m.content.length < 80 && m.content.toLowerCase().includes('understood')) return;
+      // Skip the brief acknowledgement messages
+      if (m.content.length < 80 && (m.content.toLowerCase().includes('understood') || m.content.toLowerCase().includes('ancient voice'))) return;
       addMessage('dm', '🎲 DUNGEON MASTER', m.content);
     } else if (m.role === 'user') {
       const c = m.content.replace(/^\[.*?\]\s*/, '').trim();
-      // Skip context seed messages (imported sessions, system prompts)
-      if (c.startsWith('[CONTEXT:') || c.startsWith('CONTEXT:') || c.length > 1000) return;
+      // Skip context seed messages
+      if (c.startsWith('[CONTEXT:') || c.startsWith('CONTEXT:') || c.length > 800 || c.startsWith('Begin the campaign') || c.startsWith('[ACTIVE HERO:') && c.includes('Briefly recap')) return;
       const name = party[activeHeroIdx] ? party[activeHeroIdx].name.toUpperCase() : 'HERO';
       addMessage('player', name, c);
     }

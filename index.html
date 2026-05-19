@@ -1118,7 +1118,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.9 — Auto turn switching</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.1.0 — Roll/options properly sequenced</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1826,6 +1826,16 @@ async function sendAction() {
     : text;
   clearDMOptions();
   addMessage('player', active.name.toUpperCase(), text);
+  // If there was pending post-roll content (options/turn), show it now
+  if (pendingPostRollContent) {
+    const pending = pendingPostRollContent;
+    pendingPostRollContent = null;
+    setTimeout(() => {
+      const opts = parseDMOptions(pending);
+      if (opts.length) showDMOptions(opts);
+      detectTurnChange(pending);
+    }, 100);
+  }
   conversationHistory.push({role:'user', content: playerMsg});
   const thinkEl = addThinking();
   try {
@@ -2630,14 +2640,16 @@ function generateCharacterName() {
 }
 
 // ── DICE ROLL DETECTION ──
+// Stores options/turn info that arrived with a roll request, to show after roll
+let pendingPostRollContent = null;
+
 function detectDiceRollRequest(text) {
   const rollPatterns = [
     /roll [ad]\d+/i,
     /roll (?:a )?(?:perception|athletics|stealth|insight|investigation|deception|persuasion|intimidation|arcana|history|nature|religion|medicine|survival|acrobatics|sleight|animal) check/i,
     /make (?:a )?\w+ (?:check|save|saving throw)/i,
     /roll for \w+/i,
-    /d20[+\-]/i,
-    /d20\s*\+/i,
+    /d20[+-]/i,
     /roll initiative/i,
     /roll (?:your )?attack/i,
     /DC\s*\d+/i,
@@ -2646,14 +2658,22 @@ function detectDiceRollRequest(text) {
   const hasRollRequest = rollPatterns.some(p => p.test(text));
   if (!hasRollRequest) return false;
 
-  // Extract the roll description — find the roll instruction sentence
-  let rollDesc = '';
-  const rollMatch = text.match(/Roll [^.!?]{3,120}[.!]?/i) ||
-                    text.match(/Make (?:a )?[^.!?]{3,120}[.!]?/i);
-  if (rollMatch) rollDesc = rollMatch[0].trim();
+  // Find where the roll instruction starts
+  const rollMatch = text.match(/Roll [^.!?]{3,150}[.!]?/i) ||
+                    text.match(/Make (?:a )?[^.!?]{3,150}[.!]?/i);
+  const rollDesc = rollMatch ? rollMatch[0].trim() : '';
+  const rollIdx = rollMatch ? text.indexOf(rollMatch[0]) : text.length;
+
+  // Capture anything AFTER the roll request (options, turn changes) as pending
+  const afterRoll = text.substring(rollIdx + (rollDesc.length)).trim();
+  if (afterRoll.length > 5) {
+    pendingPostRollContent = afterRoll;
+  } else {
+    pendingPostRollContent = null;
+  }
 
   showDiceWaiting(rollDesc);
-  return true; // signals that options should be suppressed
+  return true;
 }
 
 function showDiceWaiting(rollDesc) {
@@ -2825,6 +2845,7 @@ function clearDMOptions() {
   const quickArea = document.getElementById('quick-actions-area');
   if (area) { area.style.display = 'none'; area.innerHTML = ''; }
   if (quickArea) quickArea.style.display = 'flex';
+  pendingPostRollContent = null;
 }
 
 // ── HP TRACKER ──

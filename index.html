@@ -1106,6 +1106,42 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
   </div>
 </div>
 
+<!-- TRADE MODAL -->
+<div class="modal-overlay hidden" id="trade-overlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-title">⇄ TRADE ITEMS</div>
+    <div class="modal-sub" id="trade-sub">Give items or gold to another hero</div>
+    <div class="modal-section">
+      <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div class="modal-section-title" id="trade-from-label">From: —</div>
+          <div id="trade-from-list" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:30px;gap:6px;">
+          <div style="font-size:22px;color:#a07848;">→</div>
+          <select id="trade-to-select" style="background:rgba(42,30,12,0.95);border:1px solid rgba(180,130,50,0.4);color:#f0d898;font-family:'Crimson Text',serif;font-size:13px;padding:5px 8px;border-radius:2px;outline:none;" onchange="refreshTradeTo()"></select>
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <div class="modal-section-title" id="trade-to-label">To: —</div>
+          <div id="trade-to-preview" style="font-size:12px;color:#807050;font-style:italic;padding:4px 0;">Select item(s) from left to trade</div>
+        </div>
+      </div>
+    </div>
+    <div id="trade-gold-section" style="display:none;" class="modal-section">
+      <div class="modal-section-title">Or transfer gold</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="trade-gold-amt" min="1" placeholder="Amount..." style="width:100px;background:rgba(42,30,12,0.95);border:1px solid rgba(180,130,50,0.4);color:#f0d898;font-family:'Crimson Text',serif;font-size:14px;padding:6px 8px;border-radius:2px;outline:none;">
+        <span style="font-size:13px;color:#a07848;">gold pieces</span>
+        <button onclick="tradeGold()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;background:rgba(140,90,20,0.3);border:1px solid rgba(212,168,67,0.45);color:#ffd040;padding:5px 12px;border-radius:2px;cursor:pointer;">TRANSFER</button>
+      </div>
+    </div>
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeTrade()">Close</button>
+      <button class="begin-btn" id="trade-confirm-btn" onclick="confirmTrade()" style="display:none;">⇄ GIVE SELECTED</button>
+    </div>
+  </div>
+</div>
+
 <!-- DICE ANIM -->
 <div id="roll-anim"><div class="roll-pop" id="roll-pop-val"></div></div>
 <div class="parchment-bg"></div>
@@ -1118,7 +1154,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.1.0 — Roll/options properly sequenced</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.1.2 — Gold split and hero trading</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1164,7 +1200,10 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
         </div>
       </div>
       <div>
-        <div class="panel-label">Inventory</div>
+        <div class="panel-label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Inventory</span>
+          <button onclick="openTrade()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.35);color:#a07848;padding:2px 7px;border-radius:2px;cursor:pointer;" title="Give items to another hero" id="trade-btn" style="display:none;">⇄ Trade</button>
+        </div>
         <div class="char-card">
           <ul class="inventory-list" id="display-inventory">
             <li style="color:#4a3820;font-style:italic">Add a hero to begin</li>
@@ -3972,14 +4011,46 @@ const PICKUP_VERBS = [
   'you recover','you retrieve','you uncover','you pry','yields','contains',
   'inside is','inside you find','inside are','the chest contains','the body has',
   'reward is','your reward','you learn','you memorise','you memorize',
-  'you copy','added to your','added to the','now carry','now have'
+  'you copy','added to your','added to the','now carry','now have',
+  'presses','slips you','tosses you','passes you','offers you','presents you',
+  'into your hands','into your pack','into your pouch','into your bag',
+  'gold pieces','gp reward','reward of','payment of','your share'
 ];
+
+// Gold/reward pattern — catches "500gp", "500 gold pieces", "reward of 500gp" etc
+function parseGoldReward(text) {
+  const goldPatterns = [
+    /(\d+)\s*gp/gi,
+    /(\d+)\s*gold\s*pieces?/gi,
+    /(\d+)\s*gold/gi,
+    /(\d+)\s*silver\s*pieces?/gi,
+    /(\d+)\s*silver/gi,
+  ];
+  const found = [];
+  goldPatterns.forEach(p => {
+    p.lastIndex = 0;
+    let m;
+    while ((m = p.exec(text)) !== null) {
+      const amt = parseInt(m[1]);
+      if (amt > 0 && amt <= 100000) {
+        const unit = m[0].toLowerCase().includes('silver') ? 'silver pieces' : 'gold pieces';
+        found.push(amt + ' ' + unit);
+      }
+    }
+  });
+  return [...new Set(found)];
+}
 
 // Patterns to extract item names from pickup sentences
 function parsePickupItems(text) {
   if (!party.length || !gameStarted) return [];
 
   const found = [];
+
+  // ── Special: detect gold/coin rewards anywhere in text ──
+  const goldFound = parseGoldReward(text);
+  goldFound.forEach(g => { if (!found.includes(g)) found.push(g); });
+
   const lines = text.split(/[.!?]\s+|\n/);
 
   lines.forEach(line => {
@@ -3988,13 +4059,9 @@ function parsePickupItems(text) {
     if (!hasPickupVerb) return;
 
     // Extract items using common D&D item patterns
-    // Match: "a [item]", "an [item]", "the [item]", quoted items, capitalised items
     const patterns = [
-      // "a/an Longsword +1" or "a/an potion of healing"
       /\b(?:a|an|the)\s+([A-Z][a-zA-Z\s+\d'(),-]{2,40}?)(?:\s*[,;.]|\s+and\b|\s+or\b|$)/g,
-      // Quoted items: "Boots of Speed"
       /"([^"]{3,40})"/g,
-      // Capitalised multi-word items: Scroll of Fireball, Ring of Protection
       /\b((?:[A-Z][a-z]+\s+){1,4}(?:of\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|[+]\d+|[A-Z][a-z]+))\b/g,
     ];
 
@@ -4003,14 +4070,14 @@ function parsePickupItems(text) {
       let m;
       while ((m = p.exec(line)) !== null) {
         const candidate = m[1].trim();
-        if (isLikelyItem(candidate)) {
+        if (isLikelyItem(candidate) && !found.includes(candidate)) {
           found.push(candidate);
         }
       }
     });
   });
 
-  // Deduplicate
+  // Remove any gold amounts already captured via goldFound to avoid duplicates
   return [...new Set(found)].slice(0, 6);
 }
 
@@ -4035,6 +4102,16 @@ function isLikelyItem(text) {
   return hasKeyword || (isTitleCase && text.split(' ').length >= 2);
 }
 
+// Parse gold amount from item string e.g. "500 gold pieces" -> 500
+function extractGoldAmount(item) {
+  const m = item.match(/^(\d+)\s*(gold|gp|silver)/i);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function isGoldItem(item) {
+  return /^\d+\s*(gold|gp|silver)/i.test(item);
+}
+
 function showItemPickups(items, msgEl) {
   if (!items.length) return;
 
@@ -4043,26 +4120,80 @@ function showItemPickups(items, msgEl) {
 
   const label = document.createElement('span');
   label.className = 'item-pickup-label';
-  label.textContent = '+ ADD TO INVENTORY:';
+  label.textContent = '+ REWARDS:';
   bar.appendChild(label);
 
   items.forEach(item => {
+    const gold = isGoldItem(item);
+    const amt = gold ? extractGoldAmount(item) : 0;
+    const isUnit = item.toLowerCase().includes('silver') ? 'silver pieces' : 'gold pieces';
+
     const btn = document.createElement('button');
     btn.className = 'item-pickup-btn';
-    btn.innerHTML = '<span class="pickup-icon">🎒</span>' + item;
-    btn.title = 'Add "' + item + '" to ' + (party[activeHeroIdx] ? party[activeHeroIdx].name + "'s" : 'your') + ' inventory';
-    btn.onclick = () => {
-      if (btn.classList.contains('picked')) return;
-      addItemToActiveHero(item);
-      btn.classList.add('picked');
-      btn.innerHTML = '<span class="pickup-icon">✓</span>' + item;
-    };
+
+    if (gold && party.length > 1) {
+      // Show split amount
+      const share = Math.round(amt / party.length);
+      btn.innerHTML = '<span class="pickup-icon">💰</span>' + item +
+        ' <span style="font-size:11px;color:#ffd040;margin-left:4px;">(÷' + party.length + ' = ' + share + ' each)</span>';
+      btn.title = 'Split ' + amt + ' ' + isUnit + ' between ' + party.length + ' heroes (' + share + ' each)';
+      btn.onclick = () => {
+        if (btn.classList.contains('picked')) return;
+        splitGoldBetweenParty(amt, isUnit);
+        btn.classList.add('picked');
+        btn.innerHTML = '<span class="pickup-icon">✓</span>' + item + ' split between party';
+      };
+    } else if (gold) {
+      btn.innerHTML = '<span class="pickup-icon">💰</span>' + item;
+      btn.title = 'Add ' + item + ' to ' + (party[activeHeroIdx] ? party[activeHeroIdx].name + "'s" : 'your') + ' inventory';
+      btn.onclick = () => {
+        if (btn.classList.contains('picked')) return;
+        addItemToActiveHero(item);
+        btn.classList.add('picked');
+        btn.innerHTML = '<span class="pickup-icon">✓</span>' + item;
+      };
+    } else {
+      btn.innerHTML = '<span class="pickup-icon">🎒</span>' + item;
+      btn.title = 'Add to ' + (party[activeHeroIdx] ? party[activeHeroIdx].name + "'s" : 'your') + ' inventory';
+      btn.onclick = () => {
+        if (btn.classList.contains('picked')) return;
+        addItemToActiveHero(item);
+        btn.classList.add('picked');
+        btn.innerHTML = '<span class="pickup-icon">✓</span>' + item;
+      };
+    }
     bar.appendChild(btn);
   });
 
-  // Append to the message body
   const bodyEl = msgEl ? msgEl.querySelector('.msg-body') : null;
   if (bodyEl) bodyEl.appendChild(bar);
+}
+
+function splitGoldBetweenParty(totalAmt, unit) {
+  if (!party.length) return;
+  const share = Math.round(totalAmt / party.length);
+  const remainder = totalAmt - (share * party.length);
+  party.forEach((hero, i) => {
+    const heroShare = i === 0 ? share + remainder : share; // first hero gets remainder
+    const goldStr = heroShare + ' ' + unit;
+    // Try to add to existing gold entry or create new
+    const existingIdx = hero.inventory.findIndex(inv => /gold|gp|silver/i.test(inv));
+    if (existingIdx >= 0) {
+      // Try to add amounts
+      const existingAmt = extractGoldAmount(hero.inventory[existingIdx]);
+      if (existingAmt > 0) {
+        hero.inventory[existingIdx] = (existingAmt + heroShare) + ' ' + unit;
+      } else {
+        hero.inventory.push(goldStr);
+      }
+    } else {
+      hero.inventory.push(goldStr);
+    }
+  });
+  const names = party.map((h, i) => h.name + ' (+' + (i === 0 ? Math.round(totalAmt/party.length) + (totalAmt % party.length) : Math.round(totalAmt/party.length)) + ')').join(', ');
+  updateActiveHeroDisplay();
+  addMessage('system', null, '💰 ' + totalAmt + ' ' + unit + ' split: ' + party.map(h => h.name + ' +' + Math.round(totalAmt/party.length)).join(', '));
+  setTimeout(autoSave, 300);
 }
 
 function addItemToActiveHero(item) {
@@ -4076,6 +4207,148 @@ function addItemToActiveHero(item) {
   } else {
     showToast(hero.name + ' already has ' + item + '.');
   }
+}
+
+// ── ITEM TRADE BETWEEN HEROES ──
+let tradeSelectedItems = [];
+
+function openTrade() {
+  if (party.length < 2) { showToast('Need at least 2 heroes to trade.'); return; }
+  tradeSelectedItems = [];
+  renderTradeModal();
+  document.getElementById('trade-overlay').classList.remove('hidden');
+}
+
+function closeTrade() {
+  document.getElementById('trade-overlay').classList.add('hidden');
+  tradeSelectedItems = [];
+}
+
+function renderTradeModal() {
+  const fromHero = party[activeHeroIdx];
+  document.getElementById('trade-from-label').textContent = 'From: ' + fromHero.name;
+  document.getElementById('trade-sub').textContent = fromHero.name + ' gives items or gold to another hero';
+
+  // Populate "to" selector
+  const toSelect = document.getElementById('trade-to-select');
+  toSelect.innerHTML = '';
+  party.forEach((h, i) => {
+    if (i === activeHeroIdx) return;
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = h.name;
+    toSelect.appendChild(opt);
+  });
+
+  // Populate from inventory
+  const fromList = document.getElementById('trade-from-list');
+  fromList.innerHTML = '';
+  if (!fromHero.inventory.length) {
+    fromList.innerHTML = '<div style="font-size:12px;color:#605030;font-style:italic;">No items to trade.</div>';
+  } else {
+    fromHero.inventory.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 8px;background:rgba(38,27,11,0.8);border:1px solid rgba(140,100,40,0.3);border-radius:2px;cursor:pointer;transition:all 0.15s;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.style.cursor = 'pointer';
+      cb.onchange = () => {
+        if (cb.checked) { tradeSelectedItems.push(item); }
+        else { tradeSelectedItems = tradeSelectedItems.filter(i => i !== item); }
+        row.style.borderColor = cb.checked ? 'rgba(212,168,67,0.6)' : 'rgba(140,100,40,0.3)';
+        row.style.background = cb.checked ? 'rgba(65,48,18,0.9)' : 'rgba(38,27,11,0.8)';
+        document.getElementById('trade-confirm-btn').style.display = tradeSelectedItems.length ? 'inline-block' : 'none';
+        refreshTradeTo();
+      };
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'font-size:13px;color:#d0aa70;cursor:pointer;flex:1;';
+      lbl.textContent = item;
+      row.appendChild(cb);
+      row.appendChild(lbl);
+      row.onclick = (e) => { if (e.target !== cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); } };
+      fromList.appendChild(row);
+    });
+  }
+
+  // Show gold transfer if hero has gold
+  const hasGold = fromHero.inventory.some(i => isGoldItem(i));
+  document.getElementById('trade-gold-section').style.display = hasGold ? 'block' : 'none';
+
+  refreshTradeTo();
+}
+
+function refreshTradeTo() {
+  const toIdx = parseInt(document.getElementById('trade-to-select').value);
+  const toHero = party[toIdx];
+  if (!toHero) return;
+  document.getElementById('trade-to-label').textContent = 'To: ' + toHero.name;
+  const preview = document.getElementById('trade-to-preview');
+  if (tradeSelectedItems.length) {
+    preview.style.color = '#d0aa70';
+    preview.textContent = tradeSelectedItems.join(', ');
+  } else {
+    preview.style.color = '#605030';
+    preview.textContent = 'Select item(s) from left to trade';
+  }
+}
+
+function confirmTrade() {
+  if (!tradeSelectedItems.length) return;
+  const fromHero = party[activeHeroIdx];
+  const toIdx = parseInt(document.getElementById('trade-to-select').value);
+  const toHero = party[toIdx];
+  if (!toHero) return;
+
+  tradeSelectedItems.forEach(item => {
+    // Remove from sender
+    const fromIdx = fromHero.inventory.indexOf(item);
+    if (fromIdx >= 0) fromHero.inventory.splice(fromIdx, 1);
+    // Add to receiver
+    if (!toHero.inventory.includes(item)) toHero.inventory.push(item);
+  });
+
+  addMessage('system', null, '⇄ ' + fromHero.name + ' gives ' + tradeSelectedItems.join(', ') + ' to ' + toHero.name + '.');
+  updateActiveHeroDisplay();
+  setTimeout(autoSave, 300);
+  closeTrade();
+}
+
+function tradeGold() {
+  const amt = parseInt(document.getElementById('trade-gold-amt').value);
+  if (!amt || amt <= 0) { showToast('Enter a valid gold amount.'); return; }
+  const fromHero = party[activeHeroIdx];
+  const toIdx = parseInt(document.getElementById('trade-to-select').value);
+  const toHero = party[toIdx];
+  if (!toHero) return;
+
+  // Find gold in from hero's inventory
+  const goldIdx = fromHero.inventory.findIndex(i => isGoldItem(i));
+  if (goldIdx < 0) { showToast(fromHero.name + ' has no gold to transfer.'); return; }
+
+  const existing = extractGoldAmount(fromHero.inventory[goldIdx]);
+  if (existing < amt) { showToast(fromHero.name + ' only has ' + existing + ' gold.'); return; }
+
+  // Deduct from sender
+  if (existing === amt) {
+    fromHero.inventory.splice(goldIdx, 1);
+  } else {
+    fromHero.inventory[goldIdx] = (existing - amt) + ' gold pieces';
+  }
+
+  // Add to receiver
+  const toGoldIdx = toHero.inventory.findIndex(i => isGoldItem(i));
+  if (toGoldIdx >= 0) {
+    const toExisting = extractGoldAmount(toHero.inventory[toGoldIdx]);
+    toHero.inventory[toGoldIdx] = (toExisting + amt) + ' gold pieces';
+  } else {
+    toHero.inventory.push(amt + ' gold pieces');
+  }
+
+  addMessage('system', null, '💰 ' + fromHero.name + ' gives ' + amt + ' gold to ' + toHero.name + '.');
+  updateActiveHeroDisplay();
+  setTimeout(autoSave, 300);
+  document.getElementById('trade-gold-amt').value = '';
+  renderTradeModal();
 }
 
 // ── CAMPAIGN NAME RANDOMISER ──

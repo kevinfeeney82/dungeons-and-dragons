@@ -1154,7 +1154,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.1.3 — Turn deferred until after roll</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.4 — Roll detection robustness fix</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -2686,11 +2686,11 @@ let pendingPostRollContent = null;
 
 function detectDiceRollRequest(text) {
   const rollPatterns = [
-    /roll [ad]\d+/i,
+    /roll a? ?d\d+/i,
     /roll (?:a )?(?:perception|athletics|stealth|insight|investigation|deception|persuasion|intimidation|arcana|history|nature|religion|medicine|survival|acrobatics|sleight|animal) check/i,
     /make (?:a )?\w+ (?:check|save|saving throw)/i,
     /roll for \w+/i,
-    /d20[+-]/i,
+    /d20\s*[+\-]/i,
     /roll initiative/i,
     /roll (?:your )?attack/i,
     /DC\s*\d+/i,
@@ -2699,19 +2699,21 @@ function detectDiceRollRequest(text) {
   const hasRollRequest = rollPatterns.some(p => p.test(text));
   if (!hasRollRequest) return false;
 
-  // Find where the roll instruction starts
-  const rollMatch = text.match(/Roll [^.!?]{3,150}[.!]?/i) ||
-                    text.match(/Make (?:a )?[^.!?]{3,150}[.!]?/i);
+  // Find the roll sentence
+  const rollMatch = text.match(/Roll [^\n]{3,200}/i) ||
+                    text.match(/Make (?:a )?[^\n]{3,200}/i);
   const rollDesc = rollMatch ? rollMatch[0].trim() : '';
-  const rollIdx = rollMatch ? text.indexOf(rollMatch[0]) : text.length;
 
-  // Capture anything AFTER the roll request (options, turn changes) as pending
-  const afterRoll = text.substring(rollIdx + (rollDesc.length)).trim();
-  if (afterRoll.length > 5) {
-    pendingPostRollContent = afterRoll;
-  } else {
-    pendingPostRollContent = null;
-  }
+  // Find where the roll line ends and capture everything after as pending
+  // Split on newlines around the roll sentence
+  const lines = text.split(/\n/);
+  let rollLineIdx = -1;
+  lines.forEach((line, i) => {
+    if (/DC\s*\d+|roll a? ?d\d+|d20\s*[+\-]/i.test(line)) rollLineIdx = i;
+  });
+
+  const afterLines = rollLineIdx >= 0 ? lines.slice(rollLineIdx + 1).join('\n').trim() : '';
+  pendingPostRollContent = afterLines.length > 3 ? afterLines : null;
 
   showDiceWaiting(rollDesc);
   return true;

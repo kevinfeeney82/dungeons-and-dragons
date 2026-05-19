@@ -1118,7 +1118,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.8 — Roll suppresses options</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.9 — Auto turn switching</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1898,6 +1898,8 @@ function addMessage(type, header, body) {
       const dmOpts = parseDMOptions(body);
       showDMOptions(dmOpts);
     }
+    // Auto-detect turn change and switch active hero
+    setTimeout(() => detectTurnChange(body), 50);
     // Auto-detect HP changes from DM text
     setTimeout(() => parseHPChanges(body), 100);
     // Detect item/spell pickups and show add-to-inventory buttons
@@ -2685,6 +2687,40 @@ function showDiceWaiting(rollDesc) {
   banner.appendChild(text);
   banner.appendChild(hint);
   area.appendChild(banner);
+}
+
+// ── TURN CHANGE DETECTION ──
+function detectTurnChange(text) {
+  if (!party.length || party.length < 2) return;
+
+  // Look for "It is now [Name]'s turn" patterns
+  const patterns = [
+    /it is now ([A-Z][a-zA-Z]+)(?:'s|s)?\s+turn/i,
+    /([A-Z][a-zA-Z]+),?\s+it(?:'s| is) your turn/i,
+    /\[([A-Z][a-zA-Z]+)\](?:'s)?\s+turn/i,
+    /next up(?:\s+is)?:?\s+([A-Z][a-zA-Z]+)/i,
+    /([A-Z][a-zA-Z]+)(?:'s)?\s+turn\s+(?:now|next)/i,
+  ];
+
+  let detectedName = null;
+  for (const pattern of patterns) {
+    const m = text.match(pattern);
+    if (m) { detectedName = m[1]; break; }
+  }
+
+  if (!detectedName) return;
+
+  // Find the matching hero in the party
+  const targetIdx = party.findIndex(h =>
+    h.name.toLowerCase() === detectedName.toLowerCase() ||
+    h.name.toLowerCase().startsWith(detectedName.toLowerCase())
+  );
+
+  if (targetIdx === -1 || targetIdx === activeHeroIdx) return;
+
+  // Switch to that hero automatically
+  setActiveHero(targetIdx);
+  showToast(party[targetIdx].name + "'s turn — hero switched automatically");
 }
 
 // ── DM OPTION PARSER ──

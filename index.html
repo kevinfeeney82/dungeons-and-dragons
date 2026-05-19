@@ -683,6 +683,11 @@ html, body {
    ITEM PICKER TABS (mobile fix)
 ══════════════════════════════════ */
 #item-tabs { row-gap: 5px; }
+
+/* ── SETTINGS ── */
+#verbosity-slider { -webkit-appearance: none; appearance: none; background: rgba(140,100,40,0.25); border-radius: 2px; outline: none; }
+#verbosity-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #c09040; border: 2px solid rgba(212,168,67,0.7); cursor: pointer; }
+#verbosity-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #c09040; border: 2px solid rgba(212,168,67,0.7); cursor: pointer; }
 </style>
 
   <!-- Tell Google Sites to resize the iframe to fit content -->
@@ -1225,6 +1230,44 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay hidden" id="settings-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title">⚙ SETTINGS</div>
+    <div class="modal-sub">Customise your Chronicle & Shadow experience</div>
+
+    <!-- VERBOSITY -->
+    <div class="modal-section">
+      <div class="modal-section-title">Dungeon Master Verbosity</div>
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-family:'Crimson Text',serif;font-size:14px;color:#d0aa70;" id="verbosity-label">Standard</span>
+          <span style="font-family:'Cinzel',serif;font-size:11px;color:#ffd040;" id="verbosity-value">3 / 5</span>
+        </div>
+        <input type="range" id="verbosity-slider" min="1" max="5" step="1" value="3"
+          style="width:100%;accent-color:#c09040;cursor:pointer;height:4px;"
+          oninput="updateVerbosityDisplay(this.value)">
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-family:'Cinzel',serif;font-size:9px;color:#605030;letter-spacing:0.5px;">TERSE</span>
+          <span style="font-family:'Cinzel',serif;font-size:9px;color:#605030;letter-spacing:0.5px;">EPIC</span>
+        </div>
+      </div>
+      <div id="verbosity-desc" style="background:rgba(30,20,8,0.8);border-left:3px solid rgba(212,168,67,0.35);padding:10px 12px;border-radius:0 3px 3px 0;font-family:'Crimson Text',serif;font-size:13px;color:#b09060;line-height:1.6;"></div>
+    </div>
+
+    <!-- Placeholder for future settings -->
+    <div class="modal-section" style="opacity:0.4;">
+      <div class="modal-section-title">More Settings Coming Soon</div>
+      <div style="font-size:12px;color:#605030;font-style:italic;">Combat initiative style, auto-narration trigger, dice roller style...</div>
+    </div>
+
+    <div class="modal-btn-row">
+      <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
+      <button class="begin-btn" onclick="saveSettings()">✓ SAVE SETTINGS</button>
+    </div>
+  </div>
+</div>
+
 <!-- DICE ANIM -->
 <div id="roll-anim"><div class="roll-pop" id="roll-pop-val"></div></div>
 <div class="parchment-bg"></div>
@@ -1237,12 +1280,13 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.5 — Full UI consistency pass</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.6 — Settings menu and verbosity</span></div>
       </div>
     </div>
     <div class="top-right">
       <button class="top-btn" id="char-panel-btn" onclick="toggleCharPanel()" title="Toggle character panel">🧙 Hero</button>
       <button class="top-btn" onclick="openCampaignFromParty()" title="Campaign settings">🗺 Campaign</button>
+      <button class="top-btn" onclick="openSettings()" title="Game settings">⚙ Settings</button>
       <button class="top-btn" onclick="openPartyManager()">⚔ Party</button>
       <button class="top-btn" onclick="editActiveHero()">✎ Edit</button>
       <div class="session-badge" id="session-badge">SESSION I</div>
@@ -1422,6 +1466,22 @@ let activeHeroIdx = 0;    // which hero is currently speaking / shown
 let editingHeroIdx = null;// null = new hero, number = editing existing
 let selectedPortrait = PORTRAITS[0];
 let apiKey = ''; // To embed your key, replace '' with 'AIzaYOUR_KEY_HERE'
+
+// ── GAME SETTINGS ──
+const DEFAULT_SETTINGS = {
+  verbosity: 3,  // 1=terse, 2=brief, 3=standard, 4=detailed, 5=epic
+};
+let gameSettings = Object.assign({}, DEFAULT_SETTINGS);
+
+function loadGameSettings() {
+  try {
+    const raw = localStorage.getItem('cs2_settings');
+    if (raw) gameSettings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+  } catch(e) {}
+}
+function saveGameSettings() {
+  try { localStorage.setItem('cs2_settings', JSON.stringify(gameSettings)); } catch(e) {}
+}
 
 // ── CLOUDFLARE WORKER CONFIG ──
 // Set your Worker URL below to hide the API key server-side.
@@ -1809,7 +1869,21 @@ STRICT RULES — YOU MUST FOLLOW THESE EXACTLY:
    - Track HP, spell slots, and resources — reference them explicitly when relevant.
    - ${diffMap[campaign.difficulty]||'Standard difficulty.'}
 
-${getActiveQuestContext()}`;
+${getActiveQuestContext()}
+
+RESPONSE LENGTH: ${getVerbosityInstruction()}`;
+}
+
+function getVerbosityInstruction() {
+  const v = gameSettings.verbosity || 3;
+  const map = {
+    1: 'TERSE — maximum 1 short paragraph per response. Be direct and efficient. No purple prose.',
+    2: 'BRIEF — maximum 2 short paragraphs. Prioritise action and clarity over atmosphere.',
+    3: 'STANDARD — 2-3 paragraphs. Balance narrative atmosphere with pacing.',
+    4: 'DETAILED — 3-4 paragraphs. Rich sensory description, deeper NPC dialogue, vivid scene-setting.',
+    5: 'EPIC — 4-6 paragraphs. Full literary immersion. Elaborate descriptions, poetic language, deep world-building.',
+  };
+  return map[v] || map[3];
 }
 
 function startGame() {
@@ -4296,6 +4370,46 @@ function addItemToActiveHero(item) {
   }
 }
 
+// ── SETTINGS MODAL ──
+const VERBOSITY_INFO = {
+  1: { label: 'Terse',    color: '#90a070', desc: 'One short paragraph maximum. The DM gets straight to the point — action, outcome, next prompt. No embellishment. Best for experienced players who want fast-paced play.' },
+  2: { label: 'Brief',    color: '#a0b060', desc: 'Up to two short paragraphs. Atmosphere is hinted at rather than described. Clear and efficient storytelling with just enough flavour to set the scene.' },
+  3: { label: 'Standard', color: '#f0c830', desc: 'Two to three paragraphs. A balanced blend of narrative atmosphere and pacing — vivid enough to feel immersive, short enough to keep the story moving. Recommended for most players.' },
+  4: { label: 'Detailed', color: '#e0a040', desc: 'Three to four paragraphs. Rich sensory detail, deeper NPC dialogue, and thorough scene-setting. The world feels fully realised. Good for players who love immersive storytelling.' },
+  5: { label: 'Epic',     color: '#e08030', desc: 'Four to six paragraphs. Full literary immersion — poetic language, layered descriptions, deep world-building. Every moment is a vivid scene. Best for story-first players who savour every word.' },
+};
+
+function openSettings() {
+  const v = gameSettings.verbosity || 3;
+  document.getElementById('verbosity-slider').value = v;
+  updateVerbosityDisplay(v);
+  document.getElementById('settings-overlay').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.add('hidden');
+}
+
+function updateVerbosityDisplay(val) {
+  const v = parseInt(val);
+  const info = VERBOSITY_INFO[v] || VERBOSITY_INFO[3];
+  const labelEl = document.getElementById('verbosity-label');
+  const valueEl = document.getElementById('verbosity-value');
+  const descEl = document.getElementById('verbosity-desc');
+  if (labelEl) { labelEl.textContent = info.label; labelEl.style.color = info.color; }
+  if (valueEl) { valueEl.textContent = v + ' / 5'; valueEl.style.color = info.color; }
+  if (descEl) { descEl.textContent = info.desc; descEl.style.borderLeftColor = info.color + '66'; }
+}
+
+function saveSettings() {
+  const v = parseInt(document.getElementById('verbosity-slider').value);
+  gameSettings.verbosity = v;
+  saveGameSettings();
+  closeSettings();
+  const info = VERBOSITY_INFO[v];
+  showToast('Settings saved — DM verbosity: ' + info.label);
+}
+
 // ── ITEM TRADE BETWEEN HEROES ──
 let tradeSelectedItems = [];
 
@@ -5171,6 +5285,7 @@ function closeCharPanel() {
   // Init narration
   initNarration();
   renderQuests();
+  loadGameSettings();
   // Migrate any old single-slot save
   try {
     const oldRaw = localStorage.getItem('chronicle_shadow_save');

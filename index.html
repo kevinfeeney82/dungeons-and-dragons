@@ -1318,7 +1318,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.2.4 — Pending not cleared on send</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.2.5 — Pending options properly shown</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -2145,20 +2145,32 @@ function addMessage(type, header, body) {
     // Check for dice roll FIRST — if roll needed, suppress options AND defer turn change
     const needsRoll = detectDiceRollRequest(body);
     if (!needsRoll) {
-      // No new roll — apply any pending turn change from previous roll, then show new options
+      // No new roll — this is the DM narrating the roll outcome.
+      // 1. Apply any pending options/turn-change queued from the previous roll request
       if (pendingPostRollContent) {
         const prev = pendingPostRollContent;
         pendingPostRollContent = null;
-        setTimeout(() => detectTurnChange(prev), 30);
+        setTimeout(() => {
+          // Show the queued options from the roll message
+          const pendingOpts = parseDMOptions(prev);
+          if (pendingOpts.length) {
+            showDMOptions(pendingOpts);
+          } else {
+            // No queued options — show options from the current DM message instead
+            const dmOpts = parseDMOptions(body);
+            showDMOptions(dmOpts);
+          }
+          detectTurnChange(prev);
+        }, 30);
       } else {
+        // No pending — show options from current message, detect turn change
+        const dmOpts = parseDMOptions(body);
+        showDMOptions(dmOpts);
         setTimeout(() => detectTurnChange(body), 50);
       }
-      // Show options from the current DM message
-      const dmOpts = parseDMOptions(body);
-      showDMOptions(dmOpts);
     } else {
-      // New roll detected — previous pending is replaced by new pending (set inside detectDiceRollRequest)
-      // Turn change and options will show after THIS roll is resolved
+      // New roll detected — pending set inside detectDiceRollRequest
+      // Options and turn change held until DM responds to roll
     }
     // Auto-detect HP changes from DM text
     setTimeout(() => parseHPChanges(body), 100);

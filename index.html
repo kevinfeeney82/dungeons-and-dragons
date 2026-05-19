@@ -1118,7 +1118,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.7 — Prose parser split fix</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#4a3820;font-size:11px;">v1.0.8 — Roll suppresses options</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1654,12 +1654,14 @@ STRICT RULES — YOU MUST FOLLOW THESE EXACTLY:
    - NEVER skip a hero's turn or bundle multiple heroes into one exchange.
    - Enemies also take turns. After ALL heroes have acted in a round, narrate enemy actions, THEN start the next round with the first hero.
 
-2. DICE ROLLS — STOP AND WAIT:
-   - When a dice roll is required, END your message with ONLY the roll request. Do NOT continue the story.
-   - Format: "Roll [die] + [modifier] (DC [number] if applicable) — [what it determines]"
-   - Example: "Roll a d20 + your STR modifier (+2). DC 14 — success means you force the door open."
-   - WAIT for the player to report the result before narrating what happens.
-   - NEVER narrate the outcome of a roll before the player has made it.
+2. DICE ROLLS — HARD STOP — THIS IS MANDATORY:
+   - When a dice roll is required, your message MUST end with the roll request and NOTHING ELSE.
+   - Do NOT add options (A/B/C) after a dice roll request. Do NOT say whose turn is next. STOP.
+   - Format: "Roll a d[X] + [modifier]. DC [Y] — [what it determines]."
+   - Example CORRECT ending: "Roll a d20 + your INT modifier (+3). DC 12 — success reveals the aura's source."
+   - Example WRONG ending: "Roll a d20 + INT. DC 12. \nA) Option one \nB) Option two" — NEVER do this.
+   - After the player reports the roll result, THEN narrate the outcome AND offer options.
+   - One message = one purpose. Either: narrate + offer options, OR request a roll. Never both.
 
 3. OPTIONS — FORMAT STRICTLY — THIS IS MANDATORY:
    - NEVER present choices in prose form ("do you X or Y?").
@@ -1889,11 +1891,13 @@ function addMessage(type, header, body) {
     if (narrationEnabled) {
       setTimeout(() => speakText(body, speakBtn), 300);
     }
-    // Parse and show DM options
-    const dmOpts = parseDMOptions(body);
-    showDMOptions(dmOpts);
-    // Detect dice roll requests — show roll reminder
-    detectDiceRollRequest(body);
+    // Check for dice roll FIRST — if roll needed, suppress options
+    const needsRoll = detectDiceRollRequest(body);
+    if (!needsRoll) {
+      // Only show action options if NO dice roll is pending
+      const dmOpts = parseDMOptions(body);
+      showDMOptions(dmOpts);
+    }
     // Auto-detect HP changes from DM text
     setTimeout(() => parseHPChanges(body), 100);
     // Detect item/spell pickups and show add-to-inventory buttons
@@ -2625,28 +2629,29 @@ function generateCharacterName() {
 
 // ── DICE ROLL DETECTION ──
 function detectDiceRollRequest(text) {
-  const lower = text.toLowerCase();
-  // Look for explicit roll requests
   const rollPatterns = [
     /roll [ad]\d+/i,
-    /roll (?:a )?(?:perception|athletics|stealth|insight|investigation|deception|persuasion|intimidation|arcana|history|nature|religion|medicine|survival) check/i,
+    /roll (?:a )?(?:perception|athletics|stealth|insight|investigation|deception|persuasion|intimidation|arcana|history|nature|religion|medicine|survival|acrobatics|sleight|animal) check/i,
     /make (?:a )?\w+ (?:check|save|saving throw)/i,
     /roll for \w+/i,
     /d20[+\-]/i,
+    /d20\s*\+/i,
     /roll initiative/i,
     /roll (?:your )?attack/i,
+    /DC\s*\d+/i,
   ];
 
   const hasRollRequest = rollPatterns.some(p => p.test(text));
-  if (!hasRollRequest) return;
+  if (!hasRollRequest) return false;
 
-  // Extract the roll description
+  // Extract the roll description — find the roll instruction sentence
   let rollDesc = '';
-  const rollMatch = text.match(/Roll [^.!?]{3,80}/i);
+  const rollMatch = text.match(/Roll [^.!?]{3,120}[.!]?/i) ||
+                    text.match(/Make (?:a )?[^.!?]{3,120}[.!]?/i);
   if (rollMatch) rollDesc = rollMatch[0].trim();
 
-  // Show dice waiting indicator
   showDiceWaiting(rollDesc);
+  return true; // signals that options should be suppressed
 }
 
 function showDiceWaiting(rollDesc) {

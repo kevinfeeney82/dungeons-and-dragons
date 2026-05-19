@@ -1318,7 +1318,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.2.3 — Dice roll root and branch fix</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.2.4 — Pending not cleared on send</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1606,6 +1606,9 @@ function openCreatorForNew() {
   currentRecommendation = null;
   document.getElementById('party-overlay').classList.add('hidden');
   document.getElementById('creator-overlay').classList.remove('hidden');
+  // Always scroll to top of modal
+  const modal = document.querySelector('#creator-overlay .modal');
+  if (modal) modal.scrollTop = 0;
   setTimeout(watchClassRaceChanges, 50);
 }
 
@@ -1633,6 +1636,8 @@ function openCreatorForEdit(idx) {
   document.getElementById('creator-error').textContent = '';
   document.getElementById('party-overlay').classList.add('hidden');
   document.getElementById('creator-overlay').classList.remove('hidden');
+  const modal = document.querySelector('#creator-overlay .modal');
+  if (modal) modal.scrollTop = 0;
 }
 
 function closeCreator() {
@@ -2963,7 +2968,7 @@ function showDiceWaiting(rollDesc) {
   dismissBtn.style.cssText = 'font-family:Cinzel,serif;font-size:9px;letter-spacing:1px;background:transparent;border:1px solid rgba(140,100,40,0.3);color:#605030;padding:2px 8px;border-radius:2px;cursor:pointer;margin-top:6px;';
   dismissBtn.textContent = 'Dismiss';
   dismissBtn.onclick = () => {
-    pendingPostRollContent = null;
+    pendingPostRollContent = null; // only clear pending when player explicitly dismisses
     clearDMOptions();
   };
 
@@ -3116,7 +3121,8 @@ function clearDMOptions() {
   const quickArea = document.getElementById('quick-actions-area');
   if (area) { area.style.display = 'none'; area.innerHTML = ''; }
   if (quickArea) quickArea.style.display = 'flex';
-  pendingPostRollContent = null;
+  // NOTE: Do NOT clear pendingPostRollContent here —
+  // it must survive until the DM responds to the roll result.
 }
 
 // ── HP TRACKER ──

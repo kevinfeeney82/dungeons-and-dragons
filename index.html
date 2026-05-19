@@ -1280,7 +1280,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.7 — Verbosity tokens + dice fix</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.8 — Enforce attack/spell rolls</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -1837,13 +1837,18 @@ STRICT RULES — YOU MUST FOLLOW THESE EXACTLY:
    - Enemies also take turns. After ALL heroes have acted in a round, narrate enemy actions, THEN start the next round with the first hero.
 
 2. DICE ROLLS — HARD STOP — THIS IS MANDATORY:
+   - EVERY attack, spell, skill check, saving throw, or contested action REQUIRES a dice roll. NEVER skip rolls or narrate outcomes without one.
+   - When a player chooses an action (attack enemy, cast spell, pick lock, intimidate NPC etc.), your ONLY response is to request the roll. Do NOT narrate what happens yet.
+   - Attack rolls: "Roll a d20 + your [STR/DEX/spell] attack modifier. AC [enemy AC] — hit or miss."
+   - Skill checks: "Roll a d20 + your [STAT] modifier ([+X]). DC [Y] — [what success/failure means]."
+   - Damage rolls (after a hit): "Roll [damage dice] + [modifier] for damage."
    - When a dice roll is required, your message MUST end with the roll request and NOTHING ELSE.
-   - Do NOT add options (A/B/C) after a dice roll request. Do NOT say whose turn is next. STOP.
-   - Format: "Roll a d[X] + [modifier]. DC [Y] — [what it determines]."
-   - Example CORRECT ending: "Roll a d20 + your INT modifier (+3). DC 12 — success reveals the aura's source."
-   - Example WRONG ending: "Roll a d20 + INT. DC 12. \nA) Option one \nB) Option two" — NEVER do this.
-   - After the player reports the roll result, THEN narrate the outcome AND offer options.
-   - One message = one purpose. Either: narrate + offer options, OR request a roll. Never both.
+   - Do NOT add options (A/B/C) after a dice roll. Do NOT say "It is now X's turn." STOP.
+   - Do NOT pre-narrate the outcome. WAIT for the player to report the number first.
+   - After the player reports the result, THEN narrate what happens AND optionally give next options.
+   - One message = one purpose: either request a roll, OR narrate outcome + options. NEVER both.
+   - Example of WRONG: Player says "I shoot the goblin" → DM narrates the arrow hitting. NO.
+   - Example of RIGHT: Player says "I shoot the goblin" → DM says "Roll a d20 + DEX (+3). AC 13 — hit or miss."
 
 3. OPTIONS — FORMAT STRICTLY — THIS IS MANDATORY:
    - NEVER present choices in prose form ("do you X or Y?").

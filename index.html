@@ -1318,7 +1318,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.2.0 — Continue saga or fresh start</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.2.1 — Damage roll detection fixed</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -2891,11 +2891,13 @@ let pendingPostRollContent = null;
 
 function detectDiceRollRequest(text) {
   const rollPatterns = [
-    /roll a? ?d\d+/i,
+    /roll (?:a )?d\d+/i,           // roll a d20, roll d6
+    /roll \d+d\d+/i,               // roll 1d10, roll 2d6 -- DAMAGE ROLLS
     /roll (?:a )?(?:perception|athletics|stealth|insight|investigation|deception|persuasion|intimidation|arcana|history|nature|religion|medicine|survival|acrobatics|sleight|animal) check/i,
     /make (?:a )?\w+ (?:check|save|saving throw)/i,
     /roll for \w+/i,
     /d20\s*[+\-]/i,
+    /\d+d\d+\s+for/i,             // "1d10 for fire damage"
     /roll initiative/i,
     /roll (?:your )?attack/i,
     /DC\s*\d+/i,
@@ -2904,8 +2906,9 @@ function detectDiceRollRequest(text) {
   const hasRollRequest = rollPatterns.some(p => p.test(text));
   if (!hasRollRequest) return false;
 
-  // Find the roll sentence
-  const rollMatch = text.match(/Roll [^.!?\n]{3,200}[.!]?/i) ||
+  // Find the roll sentence — cover "Roll 1d10...", "Roll a d20...", "Roll 2d6..."
+  const rollMatch = text.match(/Roll (?:a )?(?:\d+)?d\d+[^.!?\n]{0,150}[.!]?/i) ||
+                    text.match(/Roll [^.!?\n]{3,200}[.!]?/i) ||
                     text.match(/Make (?:a )?[^.!?\n]{3,200}[.!]?/i);
   const rollDesc = rollMatch ? rollMatch[0].trim() : '';
 

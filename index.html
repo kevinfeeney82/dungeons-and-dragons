@@ -1280,7 +1280,7 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       <span class="torch-icon">🕯</span>
       <div>
         <h1>CHRONICLE &amp; SHADOW</h1>
-        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.6 — Settings menu and verbosity</span></div>
+        <div class="subtitle">An AI-Powered Dungeons &amp; Dragons Experience &nbsp;·&nbsp; <span style="color:#a07848;font-size:11px;letter-spacing:0.5px;">v1.1.7 — Verbosity tokens + dice fix</span></div>
       </div>
     </div>
     <div class="top-right">
@@ -2035,6 +2035,9 @@ async function sendAction() {
   conversationHistory.push({role:'user', content: playerMsg});
   const thinkEl = addThinking();
   try {
+    const verbosity = gameSettings.verbosity || 3;
+    const tokensByVerbosity = {1:280, 2:450, 3:700, 4:1000, 5:1500};
+    const maxTokens = tokensByVerbosity[verbosity] || 700;
     const geminiContents = [
       {role:'user', parts:[{text: buildSystemPrompt()+'\n\nAcknowledge your role briefly.'}]},
       {role:'model', parts:[{text:'Understood. I am the Ancient Voice, ready to guide the party with D&D 5E rules and vivid narration.'}]},
@@ -2043,7 +2046,7 @@ async function sendAction() {
     const response = await fetch(
       callAI_url(),
       {method:'POST', headers: callAI_headers(),
-       body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:1024, temperature:0.9}})}
+       body:JSON.stringify({contents:geminiContents, generationConfig:{maxOutputTokens:maxTokens, temperature:0.9}})}
     );
     const data = await response.json();
     thinkEl.remove();
@@ -2857,20 +2860,26 @@ function detectDiceRollRequest(text) {
   if (!hasRollRequest) return false;
 
   // Find the roll sentence
-  const rollMatch = text.match(/Roll [^\n]{3,200}/i) ||
-                    text.match(/Make (?:a )?[^\n]{3,200}/i);
+  const rollMatch = text.match(/Roll [^.!?\n]{3,200}[.!]?/i) ||
+                    text.match(/Make (?:a )?[^.!?\n]{3,200}[.!]?/i);
   const rollDesc = rollMatch ? rollMatch[0].trim() : '';
 
-  // Find where the roll line ends and capture everything after as pending
-  // Split on newlines around the roll sentence
-  const lines = text.split(/\n/);
-  let rollLineIdx = -1;
-  lines.forEach((line, i) => {
-    if (/DC\s*\d+|roll a? ?d\d+|d20\s*[+\-]/i.test(line)) rollLineIdx = i;
-  });
+  // Find where the roll REQUEST ends — split at the roll sentence boundary
+  // Then capture EVERYTHING after it (options, turn changes, etc.) as pending
+  let afterRoll = '';
+  if (rollDesc) {
+    const rollPos = text.indexOf(rollDesc);
+    afterRoll = text.substring(rollPos + rollDesc.length).trim();
+  } else {
+    // Fallback: split at last DC mention
+    const dcMatch = text.match(/DC\s*\d+[^\n]*/i);
+    if (dcMatch) {
+      const dcPos = text.indexOf(dcMatch[0]);
+      afterRoll = text.substring(dcPos + dcMatch[0].length).trim();
+    }
+  }
 
-  const afterLines = rollLineIdx >= 0 ? lines.slice(rollLineIdx + 1).join('\n').trim() : '';
-  pendingPostRollContent = afterLines.length > 3 ? afterLines : null;
+  pendingPostRollContent = afterRoll.length > 3 ? afterRoll : null;
 
   showDiceWaiting(rollDesc);
   return true;

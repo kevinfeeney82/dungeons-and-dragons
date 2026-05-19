@@ -816,9 +816,10 @@ Carrying: Longbow, Quiver (18 arrows), Shortsword, Leather Armour...
       </div>
     </div>
     <div id="party-error" class="error-msg"></div>
+    <div id="party-ready-status" style="font-family:'Cinzel',serif;font-size:11px;text-align:center;padding:6px;margin-bottom:4px;"></div>
     <div class="modal-btn-row">
       <button class="cancel-btn" onclick="closePartyManager()">Close</button>
-      <button class="begin-btn" onclick="savePartySettings()">✓ SAVE &amp; CONTINUE</button>
+      <button class="begin-btn" id="start-campaign-btn" onclick="savePartySettings()" style="background:rgba(140,90,20,0.5);font-size:14px;letter-spacing:2px;">⚔ START CAMPAIGN ⚔</button>
     </div>
   </div>
 </div>
@@ -1490,6 +1491,25 @@ function savePartySettings() {
 
 function renderPartyManager() {
   const list = document.getElementById('party-hero-list');
+
+  // Update readiness status
+  const statusEl = document.getElementById('party-ready-status');
+  if (statusEl) {
+    const hasHeroes = party.length > 0;
+    const hasKey = WORKER_URL || apiKey;
+    const hasCampaign = campaign.name || campaign.setting;
+    if (!hasHeroes) {
+      statusEl.style.color = '#906040';
+      statusEl.textContent = '① Add at least one hero to begin';
+    } else if (!hasKey) {
+      statusEl.style.color = '#906040';
+      statusEl.textContent = '② Enter your API key above to begin';
+    } else {
+      statusEl.style.color = '#70b870';
+      statusEl.textContent = '✓ ' + party.length + ' hero' + (party.length > 1 ? 'es' : '') + ' ready' + (campaign.name ? ' · ' + campaign.name : '') + ' — press Start Campaign!';
+    }
+  }
+
   if (party.length === 0) {
     list.innerHTML = '<div style="font-size:13px;color:#4a3820;font-style:italic;text-align:center;padding:12px;">No heroes yet — add one below</div>';
     return;
@@ -1602,44 +1622,70 @@ function buildSystemPrompt() {
     ? `Opening scenario: ${campaign.customHook}`
     : {mysterious_summons:'The party was drawn here by a mysterious summons — a cryptic letter, dying words, or vision',tavern_rumour:'The party heard a rumour in a tavern about reward, danger, or a missing person',ambushed:'The adventure began with sudden conflict — the party was ambushed or witnessed an attack',escaped_prisoners:'The party woke up imprisoned with no memory of how they got there',hired:'The party was hired by a patron for what seemed a simple job',prophecy:'An ancient prophecy points to the party — others believe it whether the heroes do or not'}[campaign.hook] || '';
 
+  const partyTurnOrder = party.map((h,i) =>
+    (i===activeHeroIdx?'[ACTIVE NOW] ':'') + h.name + ' (Lvl '+h.level+' '+h.charClass+')'
+  ).join(', ');
+
   return `You are an expert Dungeons & Dragons 5th Edition Dungeon Master called "the Ancient Voice."
 
+════════════════════════════════
 CAMPAIGN: ${campName}
 SETTING: ${settingMap[campaign.setting]||'classic fantasy'}
 TONE: ${toneMap[campaign.tone]||'epic and heroic'}
 DIFFICULTY: ${diffMap[campaign.difficulty]||'standard'}
 LENGTH: ${lengthMap[campaign.length]||'one-shot'}
 HOOK: ${hookContext}
-${campaign.notes?'DM NOTES: '+campaign.notes:''}
+${campaign.notes?'SPECIAL DM NOTES: '+campaign.notes:''}
+════════════════════════════════
 
 THE PARTY (${party.length} hero${party.length>1?'es':''}):\n${partyDesc}
 
-The ACTIVE hero is indicated in player messages. When multiple heroes are present, give each a distinct presence and track their individual resources.
+TURN ORDER THIS ROUND: ${partyTurnOrder}
+ACTIVE HERO: ${party[activeHeroIdx]?.name} — address them directly in 2nd person ("You...").
 
-TURN STRUCTURE — CRITICAL:
-- This is a solo-player game controlling ${party.length > 1 ? 'a party of ' + party.length + ' heroes' : 'one hero'}. The player controls ALL heroes but takes ONE hero's turn at a time.
-- The ACTIVE hero (marked [ACTIVE] above) is whose turn it currently is. Address them directly.
-- When a dice roll or action is needed, ask for it from the ACTIVE hero ONLY — never ask multiple heroes to roll simultaneously in the same message.
-- After the active hero acts, you may briefly narrate what the other party members do automatically (as NPCs would), THEN ask what the active hero does next — OR tell the player to switch to another hero if their input is needed.
-- In combat: run initiative order one character at a time. Ask for ONE roll per message. Wait for the result before proceeding.
-- Never ask "roll for X, Y and Z all at once" — always one roll, one hero, one action per exchange.
+════════════════════════════════
+STRICT RULES — YOU MUST FOLLOW THESE EXACTLY:
+════════════════════════════════
 
-YOUR ROLE:
-- Narrate in 2nd person for the active hero; reference companions by name
-- Enforce D&D 5E rules using each character's actual modifiers
-- When dice are needed: one roll at a time, state the die, the modifier, and the DC if applicable
-- Match the tone and setting above consistently throughout the campaign
-- Give NPCs distinct memorable voices; build atmosphere appropriate to the tone
-- Track story continuity; always end with a clear prompt for the active hero
+1. TURN-BASED PLAY — MANDATORY:
+   - Each message you send covers EXACTLY ONE hero's turn.
+   - The current active hero is marked [ACTIVE NOW] above.
+   - After their turn resolves, explicitly tell the player: "It is now [NextHero]'s turn — what does [NextHero] do?"
+   - NEVER skip a hero's turn or bundle multiple heroes into one exchange.
+   - Enemies also take turns. After ALL heroes have acted in a round, narrate enemy actions, THEN start the next round with the first hero.
 
-STYLE: 2-4 paragraphs per response. Rich sensory detail. Tone as specified above.
+2. DICE ROLLS — STOP AND WAIT:
+   - When a dice roll is required, END your message with ONLY the roll request. Do NOT continue the story.
+   - Format: "Roll [die] + [modifier] (DC [number] if applicable) — [what it determines]"
+   - Example: "Roll a d20 + your STR modifier (+2). DC 14 — success means you force the door open."
+   - WAIT for the player to report the result before narrating what happens.
+   - NEVER narrate the outcome of a roll before the player has made it.
+
+3. OPTIONS — FORMAT STRICTLY:
+   - When presenting choices, ALWAYS format them as a lettered list on separate lines:
+   A) [option text]
+   B) [option text]
+   C) [option text]
+   - Every response that ends with a player decision should have 2-4 lettered options.
+   - Keep option text short (under 15 words each).
+
+4. CAMPAIGN IDENTITY:
+   - This campaign is "${campName}" with a ${settingMap[campaign.setting]||'classic fantasy'} setting.
+   - Every scene, NPC, and location must reflect this setting and tone: ${toneMap[campaign.tone]||'epic and heroic'}.
+   - Do NOT default to generic fantasy tropes — make this campaign feel distinct and specific to its setting.
+
+5. GENERAL:
+   - Narrate in 2nd person for the active hero.
+   - Enforce D&D 5E rules using each character's actual modifiers above.
+   - Track HP, spell slots, and resources — reference them explicitly when relevant.
+   - ${diffMap[campaign.difficulty]||'Standard difficulty.'}
 
 ${getActiveQuestContext()}`;
 }
 
 function startGame() {
   gameStarted = true; turnCount = 1;
-  conversationHistory = [];
+  conversationHistory = []; // Always fresh — no previous campaign bleed
   document.getElementById('story-log').innerHTML = '';
   document.getElementById('turn-count').textContent = 'TURN 1';
   const names = party.map(h=>h.name).join(', ');
@@ -1829,6 +1875,8 @@ function addMessage(type, header, body) {
     // Parse and show DM options
     const dmOpts = parseDMOptions(body);
     showDMOptions(dmOpts);
+    // Detect dice roll requests — show roll reminder
+    detectDiceRollRequest(body);
     // Auto-detect HP changes from DM text
     setTimeout(() => parseHPChanges(body), 100);
     // Detect item/spell pickups and show add-to-inventory buttons
@@ -2482,23 +2530,84 @@ function generateCharacterName() {
   }, 600);
 }
 
+// ── DICE ROLL DETECTION ──
+function detectDiceRollRequest(text) {
+  const lower = text.toLowerCase();
+  // Look for explicit roll requests
+  const rollPatterns = [
+    /roll [ad]\d+/i,
+    /roll (?:a )?(?:perception|athletics|stealth|insight|investigation|deception|persuasion|intimidation|arcana|history|nature|religion|medicine|survival) check/i,
+    /make (?:a )?\w+ (?:check|save|saving throw)/i,
+    /roll for \w+/i,
+    /d20[+\-]/i,
+    /roll initiative/i,
+    /roll (?:your )?attack/i,
+  ];
+
+  const hasRollRequest = rollPatterns.some(p => p.test(text));
+  if (!hasRollRequest) return;
+
+  // Extract the roll description
+  let rollDesc = '';
+  const rollMatch = text.match(/Roll [^.!?]{3,80}/i);
+  if (rollMatch) rollDesc = rollMatch[0].trim();
+
+  // Show dice waiting indicator
+  showDiceWaiting(rollDesc);
+}
+
+function showDiceWaiting(rollDesc) {
+  const area = document.getElementById('dm-options-area');
+  const quickArea = document.getElementById('quick-actions-area');
+  if (!area) return;
+
+  // Clear existing options
+  area.innerHTML = '';
+  area.style.display = 'block';
+  if (quickArea) quickArea.style.display = 'none';
+
+  const banner = document.createElement('div');
+  banner.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.4);border-radius:3px;flex-wrap:wrap;';
+
+  const icon = document.createElement('span');
+  icon.style.cssText = 'font-size:20px;animation:flicker 1.5s infinite;';
+  icon.textContent = '🎲';
+
+  const text = document.createElement('div');
+  text.style.cssText = 'flex:1;min-width:0;';
+  text.innerHTML =
+    '<div style="font-family:Cinzel,serif;font-size:11px;color:#ffd040;letter-spacing:1px;margin-bottom:3px;">DICE ROLL REQUIRED — STORY PAUSED</div>' +
+    (rollDesc ? '<div style="font-size:13px;color:#d0aa70;font-style:italic;">' + rollDesc + '</div>' : '');
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:11px;color:#807050;font-style:italic;font-family:Crimson Text,serif;width:100%;margin-top:4px;';
+  hint.textContent = 'Use the dice roller on the left → report your result in the text box below.';
+
+  banner.appendChild(icon);
+  banner.appendChild(text);
+  banner.appendChild(hint);
+  area.appendChild(banner);
+}
+
 // ── DM OPTION PARSER ──
 function parseDMOptions(text) {
   const options = [];
   const lines = text.split('\n');
 
   lines.forEach(line => {
-    const clean = line.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+    const clean = line.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-–•]\s*/, '').trim();
 
-    // Match: A) text  A: text  (A) text  Option A: text
-    let m = clean.match(/^\(?([A-Ca-c])\)?[.):\s]+(.+)/) ||
-            clean.match(/^Option\s+([A-Ca-c1-3])[.:\s]+(.+)/i) ||
-            clean.match(/^([1-3])[.):]\s+(.+)/);
+    // Match all common lettered/numbered formats:
+    // A) B) C)   A: B: C:   (A) (B) (C)   A. B. C.
+    // 1) 2) 3)   1. 2. 3.   Option A: ...
+    let m = clean.match(/^\(?([A-Da-d])\)?[.):\s]+\s*(.+)/) ||
+            clean.match(/^Option\s+([A-Da-d1-4])[.:)\s]+\s*(.+)/i) ||
+            clean.match(/^([1-4])[.)]\s+(.+)/);
 
     if (m) {
       const label = m[1].toUpperCase();
       const optText = m[2].trim();
-      if (optText && optText.length > 3 && !options.some(o => o.label === label)) {
+      if (optText && optText.length > 3 && optText.length < 200 && !options.some(o => o.label === label)) {
         options.push({ label, text: optText });
       }
     }
